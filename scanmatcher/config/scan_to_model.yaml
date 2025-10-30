@@ -1,0 +1,54 @@
+# Scan-to-Model Configuration
+# Optimized for the scan-to-model pipeline using small_gicp GaussianVoxelMap
+
+scanmatcher_copy:
+  ros__parameters:
+    # Frame IDs
+    global_frame_id: "map"
+    robot_frame_id: "base_link"
+    odom_frame_id: "odom"
+    
+    # Registration method
+    registration_method: "SCAN_TO_MODEL"
+    
+    # Small GICP parameters for scan-to-model
+    small_gicp_num_neighbors: 10                  # Neighbors for covariance estimation
+    small_gicp_voxel_resolution: 0.5             # Voxel resolution for downsampling
+    
+    # LRU voxel map parameters - crucial for scan-to-model performance
+    lru_horizon: 150                             # Number of scans to keep in memory
+    lru_clear_cycle: 8                           # Clear old voxels every N scans
+    voxel_search_offsets: 1                      # Search neighborhood size
+    
+    # Processing parameters
+    vg_size_for_input: 0.15                     # Input cloud downsampling
+    vg_size_for_map: 0.1                        # Map cloud downsampling
+    trans_for_mapupdate: 0.8                    # Map update distance threshold
+    
+    # Range filtering
+    use_min_max_filter: true
+    scan_min_range: 0.1
+    scan_max_range: 40.0
+    
+    # Timing
+    scan_period: 0.1
+    map_publish_period: 8.0
+    num_targeted_cloud: 10                       # Number of submaps for traditional methods
+    
+    # Initial pose
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_z: 0.0
+    initial_pose_qx: 0.0
+    initial_pose_qy: 0.0
+    initial_pose_qz: 0.0
+    initial_pose_qw: 1.0
+    
+    # TF and odom
+    publish_tf: true
+    use_odom: false
+    use_imu: false
+    
+    # Debug
+    debug_flag: false

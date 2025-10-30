@@ -1,0 +1,22 @@
+graph_based_slam:
+    ros__parameters:
+      registration_method: "NDT"
+      voxel_leaf_size: 0.02
+      ndt_resolution: 1.0
+      ndt_num_threads: 2
+      loop_detection_period: 3000
+      threshold_loop_closure_score: 1.0
+      distance_loop_closure: 10.0
+      range_of_searching_loop_closure: 1.0
+      search_submap_num: 3
+      num_adjacent_pose_constraints: 5
+      use_save_map_in_loop: false 
+      debug_flag: true
+      # Scancontext parameters
+      use_scancontext: true
+      use_geometric_verification: true
+      scancontext_dist_threshold: 0.15
+      # Keyframe selection parameters
+      node_spacing_method: "F" # F - frame D - distance
+      distance_for_keyframe: 2.0
+      keyframe_interval: 20

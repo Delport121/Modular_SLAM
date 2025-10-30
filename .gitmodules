@@ -1,0 +1,10 @@
+[submodule "Thirdparty/ndt_omp_ros2"]
+	path = Thirdparty/ndt_omp_ros2
+	url = https://github.com/rsasaki0109/ndt_omp_ros2
+	branch = humble
+[submodule "Thirdparty/scancontext"]
+	path = Thirdparty/scancontext
+	url = https://github.com/gisbi-kim/scancontext.git
+[submodule "Thirdparty/small_gicp"]
+	path = Thirdparty/small_gicp
+	url = https://github.com/koide3/small_gicp.git

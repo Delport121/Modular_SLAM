@@ -1,0 +1,57 @@
+# Small GICP Configuration for High Speed (Outdoor/Real-time Applications)
+# Uses VGICP with optimized parameters for maximum performance
+
+scanmatcher_copy:
+  ros__parameters:
+    # Frame IDs
+    global_frame_id: "map"
+    robot_frame_id: "base_link"
+    odom_frame_id: "odom"
+    
+    # Registration method
+    registration_method: "SMALL_GICP"
+    
+    # Small GICP specific parameters
+    small_gicp_registration_type: "VGICP"         # VGICP for speed
+    small_gicp_num_neighbors: 10                  # Fewer neighbors for speed
+    small_gicp_voxel_resolution: 2.0             # Coarser voxel resolution
+    small_gicp_max_correspondence_distance: 2.0   # Larger correspondence distance
+    
+    # LRU voxel map parameters
+    lru_horizon: 50                              # Lower horizon for speed
+    lru_clear_cycle: 20                          # Less frequent clearing for speed
+    voxel_search_offsets: 1                      # Minimal search offsets for speed
+    
+    # Processing parameters
+    ndt_num_threads: 8                           # More parallel threads
+    vg_size_for_input: 0.3                      # Coarser input downsampling
+    vg_size_for_map: 0.2                        # Coarser map downsampling
+    trans_for_mapupdate: 2.0                    # Less frequent map updates
+    
+    # Range filtering
+    use_min_max_filter: true
+    scan_min_range: 0.5
+    scan_max_range: 100.0
+    
+    # Timing
+    scan_period: 0.1
+    map_publish_period: 10.0
+    num_targeted_cloud: 8                        # Fewer submaps for speed
+    
+    # Initial pose
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_z: 0.0
+    initial_pose_qx: 0.0
+    initial_pose_qy: 0.0
+    initial_pose_qz: 0.0
+    initial_pose_qw: 1.0
+    
+    # TF and odom
+    publish_tf: true
+    use_odom: false
+    use_imu: false
+    
+    # Debug
+    debug_flag: false

@@ -1,0 +1,57 @@
+# Small GICP Configuration for High Accuracy (Indoor/Structured Environments)
+# Uses GICP with fine-tuned parameters for maximum accuracy
+
+scanmatcher_copy:
+  ros__parameters:
+    # Frame IDs
+    global_frame_id: "map"
+    robot_frame_id: "base_link" 
+    odom_frame_id: "odom"
+    
+    # Registration method
+    registration_method: "SMALL_GICP"
+    
+    # Small GICP specific parameters
+    small_gicp_registration_type: "GICP"          # GICP or VGICP
+    small_gicp_num_neighbors: 20                  # More neighbors for better covariance estimation
+    small_gicp_voxel_resolution: 0.5             # Fine voxel resolution for VGICP  
+    small_gicp_max_correspondence_distance: 1.0   # Maximum correspondence distance
+    
+    # LRU voxel map parameters
+    lru_horizon: 200                             # Higher horizon for better accuracy
+    lru_clear_cycle: 5                           # More frequent clearing for accuracy
+    voxel_search_offsets: 2                      # More search offsets for better matching
+    
+    # Processing parameters
+    ndt_num_threads: 4                           # Parallel threads
+    vg_size_for_input: 0.1                      # Fine input downsampling
+    vg_size_for_map: 0.05                       # Very fine map downsampling
+    trans_for_mapupdate: 0.5                    # Frequent map updates
+    
+    # Range filtering
+    use_min_max_filter: true
+    scan_min_range: 0.1
+    scan_max_range: 30.0
+    
+    # Timing
+    scan_period: 0.1
+    map_publish_period: 5.0
+    num_targeted_cloud: 15                       # More submaps for better accuracy
+    
+    # Initial pose
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_z: 0.0
+    initial_pose_qx: 0.0
+    initial_pose_qy: 0.0
+    initial_pose_qz: 0.0
+    initial_pose_qw: 1.0
+    
+    # TF and odom
+    publish_tf: true
+    use_odom: false
+    use_imu: false
+    
+    # Debug
+    debug_flag: false

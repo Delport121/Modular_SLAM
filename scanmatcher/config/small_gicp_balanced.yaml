@@ -1,0 +1,57 @@
+# Small GICP Configuration for Balanced Performance
+# Uses GICP with balanced parameters for general use
+
+scanmatcher_copy:
+  ros__parameters:
+    # Frame IDs
+    global_frame_id: "map"
+    robot_frame_id: "base_link"
+    odom_frame_id: "odom"
+    
+    # Registration method
+    registration_method: "SMALL_GICP"
+    
+    # Small GICP specific parameters
+    small_gicp_registration_type: "GICP"          # GICP for balance
+    small_gicp_num_neighbors: 12                  # Moderate neighbors
+    small_gicp_voxel_resolution: 1.0             # Standard voxel resolution
+    small_gicp_max_correspondence_distance: 1.5   # Moderate correspondence distance
+    
+    # LRU voxel map parameters
+    lru_horizon: 100                             # Standard LRU horizon
+    lru_clear_cycle: 10                          # Standard clear cycle
+    voxel_search_offsets: 1                      # Standard search offsets
+    
+    # Processing parameters
+    ndt_num_threads: 6                           # Moderate parallelism
+    vg_size_for_input: 0.2                      # Standard input downsampling
+    vg_size_for_map: 0.1                        # Standard map downsampling
+    trans_for_mapupdate: 1.0                    # Standard map update frequency
+    
+    # Range filtering
+    use_min_max_filter: true
+    scan_min_range: 0.1
+    scan_max_range: 50.0
+    
+    # Timing
+    scan_period: 0.1
+    map_publish_period: 8.0
+    num_targeted_cloud: 10                       # Standard number of submaps
+    
+    # Initial pose
+    set_initial_pose: true
+    initial_pose_x: 0.0
+    initial_pose_y: 0.0
+    initial_pose_z: 0.0
+    initial_pose_qx: 0.0
+    initial_pose_qy: 0.0
+    initial_pose_qz: 0.0
+    initial_pose_qw: 1.0
+    
+    # TF and odom
+    publish_tf: true
+    use_odom: false
+    use_imu: false
+    
+    # Debug
+    debug_flag: false
