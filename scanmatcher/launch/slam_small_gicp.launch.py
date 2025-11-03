@@ -155,12 +155,12 @@ def generate_launch_description():
             'num_targeted_cloud': 10,
         }],
         remappings=[
-            ('input_cloud', 'a200_1057/cloud3/map'), #/a200_1057/cloud3/map #ouster/points
+            ('input_cloud', 'ouster/points'), #a200_1057/cloud3/map #ouster/points #points_raw
             ('current_pose', 'current_pose'),
             ('map', 'map'),
             ('path', 'path'),
-            ('tf_static', 'a200_1057/tf_static'),
-            ('tf', 'a200_1057/tf'),
+            # ('tf_static', 'a200_1057/tf_static'),
+            # ('tf', 'a200_1057/tf'),
         ]
     )
 

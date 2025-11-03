@@ -1,5 +1,6 @@
 #include "scanmatcher/scanmatcher_component.h"
 #include <chrono>
+// #include <fstream>
 
 // Test small_gicp integration
 #include <small_gicp/registration/registration.hpp>
@@ -323,6 +324,13 @@ void ScanMatcherComponent::initializePubSub()
       iteration_count_ = iteration_count_ + 1;
       double pipeline_time_ms = (pipeline_end.seconds() - pipeline_start.seconds()) * 1000.0;
       RCLCPP_INFO(get_logger(), "Iteration count: %d, Pipeline time: %.3fms", iteration_count_, pipeline_time_ms);
+      
+      // // Save pipeline time to file in workspace
+      // std::ofstream pipeline_log("/home/ruan/dev_ws/pipeline_times.txt", std::ios::app);
+      // if (pipeline_log.is_open()) {
+      //   pipeline_log << pipeline_time_ms << "\n";
+      //   pipeline_log.close();
+      // }
 
     };
 
@@ -342,7 +350,7 @@ void ScanMatcherComponent::initializePubSub()
 
   input_cloud_sub_ =
     create_subscription<sensor_msgs::msg::PointCloud2>(
-    "a200_1057/cloud3/map", rclcpp::SensorDataQoS(), cloud_callback);
+    "input_cloud", rclcpp::SensorDataQoS(), cloud_callback); 
 
   // pub
   pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(

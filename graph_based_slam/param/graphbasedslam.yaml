@@ -14,7 +14,7 @@ graph_based_slam:
       debug_flag: true
       # Scancontext parameters
       use_scancontext: true
-      use_geometric_verification: true
+      use_geometric_verification: false
       scancontext_dist_threshold: 0.15
       # Keyframe selection parameters
       node_spacing_method: "F" # F - frame D - distance

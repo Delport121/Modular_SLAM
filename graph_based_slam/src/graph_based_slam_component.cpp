@@ -367,7 +367,7 @@ void GraphBasedSlamComponent::initializePubSub()
 
   map_submap_sub_ =
     create_subscription<lidarslam_msgs::msg::SubMap>(
-    "a200_1057/submap", rclcpp::QoS(rclcpp::KeepLast(1)).reliable(), submap_callback);
+    "submap", rclcpp::QoS(rclcpp::KeepLast(1)).reliable(), submap_callback);
 
   auto map_array_callback =
     [this](const typename lidarslam_msgs::msg::MapArray::SharedPtr msg_ptr) -> void
