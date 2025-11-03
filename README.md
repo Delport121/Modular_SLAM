@@ -1,4 +1,4 @@
-# Modular-SLAM (Modified lidarslam_ros2)
+# Modular-SLAM
 
 **Note: This package was inspired by the architecture used in [lidarslam_ros2](https://github.com/rsasaki0109/lidarslam_ros2) by Ryohei Sasaki. All original credits go to the original author.**
 
