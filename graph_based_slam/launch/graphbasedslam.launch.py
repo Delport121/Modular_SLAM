@@ -18,9 +18,16 @@ def generate_launch_description():
         package='graph_based_slam',
         executable='graph_based_slam_node',
         parameters=[graphbasedslam_param_dir],
-        output='screen'
+        output='screen',
+        remappings=[
+            ('submap', 'submap'), #a200_1057/submap
+            # ('current_pose', 'current_pose'),
+            # ('map', 'map'),
+            # ('path', 'path'),
+            # ('tf_static', 'a200_1057/tf_static'),
+            # ('tf', 'a200_1057/tf'),
+        ]
         )
-
 
     return launch.LaunchDescription([
         launch.actions.DeclareLaunchArgument(

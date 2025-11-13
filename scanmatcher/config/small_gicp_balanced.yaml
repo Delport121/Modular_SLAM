@@ -1,7 +1,7 @@
 # Small GICP Configuration for Balanced Performance
 # Uses GICP with balanced parameters for general use
 
-scanmatcher_copy:
+scanmatcher:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"

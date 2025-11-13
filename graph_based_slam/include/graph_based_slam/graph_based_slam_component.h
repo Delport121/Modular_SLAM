@@ -125,7 +125,9 @@ namespace graphslam
     rclcpp::Subscription < lidarslam_msgs::msg::MapArray > ::SharedPtr map_array_sub_;
     rclcpp::Publisher < lidarslam_msgs::msg::MapArray > ::SharedPtr modified_map_array_pub_;
     rclcpp::Publisher < nav_msgs::msg::Path > ::SharedPtr modified_path_pub_;
+    rclcpp::Publisher < nav_msgs::msg::Path > ::SharedPtr unmodified_path_pub_;
     rclcpp::Publisher < sensor_msgs::msg::PointCloud2 > ::SharedPtr modified_map_pub_;
+    rclcpp::Publisher < sensor_msgs::msg::PointCloud2 > ::SharedPtr unmodified_map_cloud_pub_;
     rclcpp::Publisher < sensor_msgs::msg::PointCloud2 > ::SharedPtr transformed_latest_submap_pub_;
     rclcpp::Publisher < sensor_msgs::msg::PointCloud2 > ::SharedPtr filtered_clouds_pub_;
     rclcpp::Publisher < sensor_msgs::msg::PointCloud2 > ::SharedPtr aligned_source_cloud_pub_;
@@ -169,7 +171,7 @@ namespace graphslam
     double scancontext_dist_threshold_ {0.15};
 
     bool debug_flag_ {false};
-
+    bool headless_debug_flag_ {false};
   };
 }
 

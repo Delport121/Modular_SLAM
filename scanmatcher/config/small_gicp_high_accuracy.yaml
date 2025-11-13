@@ -1,7 +1,7 @@
 # Small GICP Configuration for High Accuracy (Indoor/Structured Environments)
 # Uses GICP with fine-tuned parameters for maximum accuracy
 
-scanmatcher_copy:
+scanmatcher:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"
@@ -12,7 +12,7 @@ scanmatcher_copy:
     registration_method: "SMALL_GICP"
     
     # Small GICP specific parameters
-    small_gicp_registration_type: "GICP"          # GICP or VGICP
+    small_gicp_registration_type: "SMALL_GICP"          # GICP or VGICP
     small_gicp_num_neighbors: 20                  # More neighbors for better covariance estimation
     small_gicp_voxel_resolution: 0.5             # Fine voxel resolution for VGICP  
     small_gicp_max_correspondence_distance: 1.0   # Maximum correspondence distance

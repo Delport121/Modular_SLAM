@@ -287,8 +287,8 @@ void ScanMatcherComponent::initializePubSub()
           robot_frame_id_, msg->header.frame_id, time_point);
         tf2::doTransform(*msg, transformed_msg, transform); // TODO:slow now(https://github.com/ros/geometry2/pull/432)
       } catch (tf2::TransformException & e) {
-        RCLCPP_ERROR(this->get_logger(), "%s", e.what());
-        return;
+        RCLCPP_WARN(this->get_logger(), "Transform lookup failed: %s. Using untransformed point cloud.", e.what());
+        transformed_msg = *msg;
       }
 
       pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_ptr(new pcl::PointCloud<pcl::PointXYZI>());

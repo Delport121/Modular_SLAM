@@ -1,7 +1,7 @@
 # Small GICP Configuration for High Speed (Outdoor/Real-time Applications)
 # Uses VGICP with optimized parameters for maximum performance
 
-scanmatcher_copy:
+scanmatcher:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"
@@ -9,7 +9,7 @@ scanmatcher_copy:
     odom_frame_id: "odom"
     
     # Registration method
-    registration_method: "SMALL_GICP"
+    registration_method: "VGICP"
     
     # Small GICP specific parameters
     small_gicp_registration_type: "VGICP"         # VGICP for speed

@@ -44,6 +44,8 @@ GraphBasedSlamComponent::GraphBasedSlamComponent(const rclcpp::NodeOptions & opt
   get_parameter("use_save_map_in_loop", use_save_map_in_loop_);
   declare_parameter("debug_flag", false);
   get_parameter("debug_flag", debug_flag_);
+  declare_parameter("headless_debug_flag_", false);
+  get_parameter("headless_debug_flag_", headless_debug_flag_);
   declare_parameter("use_scancontext", true);
   get_parameter("use_scancontext", use_scancontext_);
   declare_parameter("use_geometric_verification", true);
@@ -70,6 +72,7 @@ GraphBasedSlamComponent::GraphBasedSlamComponent(const rclcpp::NodeOptions & opt
   std::cout << "num_adjacent_pose_constraints:" << num_adjacent_pose_constraints_ << std::endl;
   std::cout << "use_save_map_in_loop:" << std::boolalpha << use_save_map_in_loop_ << std::endl;
   std::cout << "debug_flag:" << std::boolalpha << debug_flag_ << std::endl;
+  std::cout << "headless_debug_flag:" << std::boolalpha << headless_debug_flag_ << std::endl;
   std::cout << "use_scancontext:" << std::boolalpha << use_scancontext_ << std::endl;
   std::cout << "use_geometric_verification:" << std::boolalpha << use_geometric_verification_ << std::endl;
   std::cout << "scancontext_dist_threshold:" << scancontext_dist_threshold_ << std::endl;
@@ -201,6 +204,45 @@ void GraphBasedSlamComponent::initializePubSub()
       // Store latest submap information to map array
       map_array2_msg_.submaps.push_back(map_submap_msg_); 
       RCLCPP_INFO(get_logger(), "Number of submaps in map_array2_msg_: %ld", map_array2_msg_.submaps.size());
+
+      // Publish unmodified path and map cloud if debug flag is active
+      if (headless_debug_flag_) {
+        // Publish unmodified path from all submaps
+        nav_msgs::msg::Path unmodified_path;
+        unmodified_path.header.frame_id = "map";
+        unmodified_path.header.stamp = this->get_clock()->now();
+        
+        // Accumulate all submap clouds and publish unmodified map cloud
+        pcl::PointCloud<pcl::PointXYZI>::Ptr unmodified_map_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);
+        
+        for (const auto& submap : map_array2_msg_.submaps) {
+          // Add pose to path
+          geometry_msgs::msg::PoseStamped pose_stamped;
+          pose_stamped.header.frame_id = "map";
+          pose_stamped.header.stamp = this->get_clock()->now();
+          pose_stamped.pose = submap.pose;
+          unmodified_path.poses.push_back(pose_stamped);
+          
+          // // Transform and accumulate cloud
+          // pcl::PointCloud<pcl::PointXYZI>::Ptr submap_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);
+          // pcl::fromROSMsg(submap.cloud, *submap_cloud_ptr);
+          // pcl::PointCloud<pcl::PointXYZI>::Ptr transformed_submap_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>);
+          // Eigen::Affine3d submap_affine;
+          // tf2::fromMsg(submap.pose, submap_affine);
+          // pcl::transformPointCloud(*submap_cloud_ptr, *transformed_submap_cloud_ptr, submap_affine.matrix().cast<float>());
+          // *unmodified_map_cloud_ptr += *transformed_submap_cloud_ptr;
+        }
+        
+        RCLCPP_INFO(get_logger(), "Publishing unmodified path with %ld poses", unmodified_path.poses.size());
+        unmodified_path_pub_->publish(unmodified_path);
+        
+        // // Publish unmodified map cloud
+        // sensor_msgs::msg::PointCloud2 unmodified_map_cloud_msg;
+        // pcl::toROSMsg(*unmodified_map_cloud_ptr, unmodified_map_cloud_msg);
+        // unmodified_map_cloud_msg.header.frame_id = "map";
+        // unmodified_map_cloud_msg.header.stamp = this->get_clock()->now();
+        // unmodified_map_cloud_pub_->publish(unmodified_map_cloud_msg);
+      }
 
       // Add cloud to Scan context
       if (use_scancontext_) {
@@ -397,6 +439,14 @@ void GraphBasedSlamComponent::initializePubSub()
 
   modified_path_pub_ = create_publisher<nav_msgs::msg::Path>(
     "modified_path",
+    rclcpp::QoS(10));
+
+  unmodified_path_pub_ = create_publisher<nav_msgs::msg::Path>(
+    "unmodified_path",
+    rclcpp::QoS(10));
+
+  unmodified_map_cloud_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
+    "unmodified_map_cloud",
     rclcpp::QoS(10));
 
   transformed_latest_submap_pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
