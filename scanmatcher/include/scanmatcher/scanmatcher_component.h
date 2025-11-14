@@ -75,6 +75,7 @@ extern "C" {
 #include <future>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <fstream>
 
 namespace graphslam
 {
@@ -146,6 +147,9 @@ private:
     // Scan-to-model helper functions
     small_gicp::PointCloud::Ptr pclToSmallGicp(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& pcl_cloud);
     Eigen::Matrix4f scanToModelAlignment(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud_ptr, const Eigen::Matrix4f& initial_transform);
+    
+    // TUM format logging
+    void logPoseInTUMFormat(const rclcpp::Time& timestamp, const geometry_msgs::msg::Pose& pose);
 
     bool initial_pose_received_ {false};
     bool initial_cloud_received_ {false};
@@ -208,6 +212,10 @@ private:
     // imu
     double scan_period_ {0.1};
     LidarUndistortion lidar_undistortion_;
+    
+    // TUM format logging
+    std::string tum_log_filename_;
+    std::ofstream tum_pose_log_;
 
   };
 } // namespace graphslam

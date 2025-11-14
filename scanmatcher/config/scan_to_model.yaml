@@ -11,9 +11,11 @@ scanmatcher:
     # Registration method
     registration_method: "SCAN_TO_MODEL"
     
-    # Small GICP parameters for scan-to-model
-    small_gicp_num_neighbors: 10                  # Neighbors for covariance estimation
-    small_gicp_voxel_resolution: 0.5             # Voxel resolution for downsampling
+   # Small GICP specific parameters
+    small_gicp_registration_type: "VGICP"          # GICP or VGICP (Does not affect scan-to-model)
+    small_gicp_num_neighbors: 10                  # Moderate neighbors 12
+    small_gicp_voxel_resolution: 0.2             # Standard voxel resolution 1
+    small_gicp_max_correspondence_distance: 1.0   # Moderate correspondence distance 1.5
     
     # LRU voxel map parameters - crucial for scan-to-model performance
     lru_horizon: 150                             # Number of scans to keep in memory
@@ -21,7 +23,8 @@ scanmatcher:
     voxel_search_offsets: 1                      # Search neighborhood size
     
     # Processing parameters
-    vg_size_for_input: 0.15                     # Input cloud downsampling
+    ndt_num_threads: 8                           # Moderate parallelism
+    vg_size_for_input: 0.2                     # Input cloud downsampling
     vg_size_for_map: 0.1                        # Map cloud downsampling
     trans_for_mapupdate: 0.8                    # Map update distance threshold
     
@@ -51,4 +54,5 @@ scanmatcher:
     use_imu: false
     
     # Debug
-    debug_flag: false
+    debug_flag: true
+    tum_log_filename: "/home/ruan/dev_ws/tum_trajectory.txt"

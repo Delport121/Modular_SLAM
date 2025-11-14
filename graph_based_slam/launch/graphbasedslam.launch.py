@@ -1,8 +1,6 @@
 import os
-
 import launch
 import launch_ros.actions
-
 from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
@@ -14,7 +12,7 @@ def generate_launch_description():
             'param',
             'graphbasedslam.yaml'))
 
-    graphbasedslam_copy = launch_ros.actions.Node(
+    graphbasedslam = launch_ros.actions.Node(
         package='graph_based_slam',
         executable='graph_based_slam_node',
         parameters=[graphbasedslam_param_dir],
@@ -34,5 +32,5 @@ def generate_launch_description():
             'graphbasedslam_param_dir',
             default_value=graphbasedslam_param_dir,
             description='Full path to graphbasedslam parameter file to load'),
-        graphbasedslam_copy,
+        graphbasedslam,
             ])

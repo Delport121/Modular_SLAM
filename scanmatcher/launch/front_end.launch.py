@@ -8,7 +8,7 @@ def generate_launch_description():
     
     # Get the config file path
     package_dir = get_package_share_directory('scanmatcher')
-    config_file = os.path.join(package_dir, 'config', 'small_gicp_high_accuracy.yaml')
+    config_file = os.path.join(package_dir, 'config', 'scan_to_model.yaml')
 
     # Static transform publisher for lidar to base_link (identity transform)
     # Adjust the parent frame if your lidar publishes with a different frame_id

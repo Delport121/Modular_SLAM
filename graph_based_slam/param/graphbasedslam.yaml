@@ -1,7 +1,7 @@
 graph_based_slam:
     ros__parameters:
       registration_method: "NDT"
-      voxel_leaf_size: 0.02 #0.02
+      voxel_leaf_size: 0.02 
       ndt_resolution: 1.0
       ndt_num_threads: 2
       loop_detection_period: 3000
@@ -13,11 +13,20 @@ graph_based_slam:
       use_save_map_in_loop: false 
       debug_flag: true
       headless_debug_flag_: false
+
       # Scancontext parameters
       use_scancontext: true
       use_geometric_verification: true
       scancontext_dist_threshold: 0.15
+
       # Keyframe selection parameters
       node_spacing_method: "F" # F - frame D - distance
       distance_for_keyframe: 1.0
       keyframe_interval: 30
+      
+      # TUM format logging
+      tum_log_unoptimized_filename: "/home/ruan/dev_ws/tum_trajectory_unoptimized.txt"
+      tum_log_optimized_filename: "/home/ruan/dev_ws/tum_trajectory_optimized.txt"
+      
+      # Map saving
+      map_filename: "/home/ruan/dev_ws/map.pcd"

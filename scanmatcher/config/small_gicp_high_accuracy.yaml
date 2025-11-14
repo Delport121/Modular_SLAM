@@ -12,7 +12,7 @@ scanmatcher:
     registration_method: "SMALL_GICP"
     
     # Small GICP specific parameters
-    small_gicp_registration_type: "SMALL_GICP"          # GICP or VGICP
+    small_gicp_registration_type: "VGICP"          # GICP or VGICP
     small_gicp_num_neighbors: 20                  # More neighbors for better covariance estimation
     small_gicp_voxel_resolution: 0.5             # Fine voxel resolution for VGICP  
     small_gicp_max_correspondence_distance: 1.0   # Maximum correspondence distance
@@ -55,3 +55,4 @@ scanmatcher:
     
     # Debug
     debug_flag: false
+    tum_log_filename: "/home/ruan/dev_ws/tum_trajectory.txt"

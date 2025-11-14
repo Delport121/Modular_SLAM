@@ -1,6 +1,7 @@
 #include "scanmatcher/scanmatcher_component.h"
 #include <chrono>
-// #include <fstream>
+#include <fstream>
+#include <iomanip>
 
 // Test small_gicp integration
 #include <small_gicp/registration/registration.hpp>
@@ -115,6 +116,8 @@ ScanMatcherComponent::ScanMatcherComponent(const rclcpp::NodeOptions & options)
   get_parameter("use_imu", use_imu_);
   declare_parameter("debug_flag", false);
   get_parameter("debug_flag", debug_flag_);
+  declare_parameter("tum_log_filename", "/tmp/tum_trajectory.txt");
+  get_parameter("tum_log_filename", tum_log_filename_);
 
   std::cout << "registration_method:" << registration_method_ << std::endl;
   std::cout << "ndt_resolution[m]:" << ndt_resolution << std::endl;
@@ -180,25 +183,6 @@ ScanMatcherComponent::ScanMatcherComponent(const rclcpp::NodeOptions & options)
     RCLCPP_ERROR(get_logger(), "Small GICP not available. Compile with BUILD_WITH_SMALL_GICP_PCL=ON");
     exit(1);
 #endif
-  } else if (registration_method_ == "VGICP") {
-#ifdef BUILD_WITH_SMALL_GICP_PCL
-    boost::shared_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>
-      vgicp_reg(new small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>());
-    
-    // Configure VGICP parameters
-    vgicp_reg->setNumThreads(ndt_num_threads);
-    vgicp_reg->setNumNeighborsForCovariance(small_gicp_num_neighbors_);
-    vgicp_reg->setVoxelResolution(small_gicp_voxel_resolution_);
-    vgicp_reg->setRegistrationType("VGICP");  // Force VGICP type
-    vgicp_reg->setMaxCorrespondenceDistance(small_gicp_max_correspondence_distance_);
-    vgicp_reg->setTransformationEpsilon(1e-8);
-    
-    registration_ = vgicp_reg;
-    RCLCPP_INFO(get_logger(), "Using VGICP registration (Voxelized GICP)");
-#else
-    RCLCPP_ERROR(get_logger(), "VGICP not available. Compile with BUILD_WITH_SMALL_GICP_PCL=ON");
-    exit(1);
-#endif
   } else if (registration_method_ == "SCAN_TO_MODEL") {
     // Initialize scan-to-model pipeline
     voxel_map_ = nullptr;  // Will be initialized on first scan
@@ -238,6 +222,16 @@ ScanMatcherComponent::ScanMatcherComponent(const rclcpp::NodeOptions & options)
     initial_pose_received_ = true;
 
     path_.poses.push_back(*msg);
+  }
+
+  // Initialize TUM format logging if debug flag is active
+  if (debug_flag_) {
+    tum_pose_log_.open(tum_log_filename_, std::ios::out);
+    if (tum_pose_log_.is_open()) {
+      RCLCPP_INFO(get_logger(), "TUM format pose logging enabled: %s", tum_log_filename_.c_str());
+    } else {
+      RCLCPP_WARN(get_logger(), "Failed to open TUM format log file: %s", tum_log_filename_.c_str());
+    }
   }
 
   RCLCPP_INFO(get_logger(), "initialization end");
@@ -312,14 +306,16 @@ void ScanMatcherComponent::initializePubSub()
       }
 
       if (!initial_cloud_received_) {
-        RCLCPP_INFO(get_logger(), "initial_cloud is received");
+        RCLCPP_INFO(get_logger(), "Initial_cloud is received");
         initial_cloud_received_ = true;
         initializeMap(tmp_ptr, msg->header);
         last_map_time_ = clock_.now();
       }
 
+      // Process cloud in main SLAM pipeline
       if (initial_cloud_received_) {receiveCloud(tmp_ptr, msg->header.stamp);}
 
+      // Logging pipeline time
       rclcpp::Time pipeline_end = system_clock.now();
       iteration_count_ = iteration_count_ + 1;
       double pipeline_time_ms = (pipeline_end.seconds() - pipeline_start.seconds()) * 1000.0;
@@ -536,6 +532,9 @@ void ScanMatcherComponent::receiveCloud(
   std::cout << "num_submaps:" << num_submaps << std::endl;
   std::cout << "moving distance:" << latest_distance_ << std::endl;
   std::cout << "---------------------------------------------------------" << std::endl;
+  
+  // Log pose in TUM format for evo processing
+  logPoseInTUMFormat(stamp, current_pose_stamped_.pose);
 }
 
 void ScanMatcherComponent::publishMapAndPose(
@@ -813,6 +812,23 @@ Eigen::Matrix4f ScanMatcherComponent::scanToModelAlignment(const pcl::PointCloud
   
   // Convert Isometry3d to Matrix4f for compatibility
   return T_world_lidar_.matrix().cast<float>();
+}
+
+void ScanMatcherComponent::logPoseInTUMFormat(const rclcpp::Time& timestamp, const geometry_msgs::msg::Pose& pose) {
+  if (!tum_pose_log_.is_open()) {
+    return;
+  }
+  
+  // TUM format: timestamp tx ty tz qx qy qz qw
+  double time_seconds = timestamp.seconds();
+  tum_pose_log_ << std::fixed << std::setprecision(6) << time_seconds << " "
+                << std::setprecision(6) << pose.position.x << " "
+                << pose.position.y << " "
+                << pose.position.z << " "
+                << pose.orientation.x << " "
+                << pose.orientation.y << " "
+                << pose.orientation.z << " "
+                << pose.orientation.w << std::endl;
 }
 
 } // namespace graphslam

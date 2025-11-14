@@ -55,3 +55,4 @@ scanmatcher:
     
     # Debug
     debug_flag: false
+    tum_log_filename: "/home/ruan/dev_ws/tum_trajectory.txt"

@@ -60,6 +60,7 @@ extern "C" {
 #include <lidarslam_msgs/msg/map_array.hpp>
 
 #include <pcl_conversions/pcl_conversions.h>
+#include <fstream>
 
 #include <pcl/point_types.h>
 #include <pcl/registration/ndt.h>
@@ -139,6 +140,11 @@ namespace graphslam
     void searchLoop();
     void doPoseAdjustment(lidarslam_msgs::msg::MapArray map_array_msg, bool do_save_map);
     void publishMapAndPose();
+    
+    // TUM format logging
+    void logTrajectoryInTUMFormat(
+      const lidarslam_msgs::msg::MapArray& map_array_msg,
+      const std::string& filename);
 
     // loop search parameter
     int loop_detection_period_;
@@ -172,6 +178,13 @@ namespace graphslam
 
     bool debug_flag_ {false};
     bool headless_debug_flag_ {false};
+    
+    // TUM format logging
+    std::string tum_log_unoptimized_filename_;
+    std::string tum_log_optimized_filename_;
+    
+    // Map saving
+    std::string map_filename_;
   };
 }
 

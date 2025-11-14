@@ -1,5 +1,7 @@
 #include "graph_based_slam/graph_based_slam_component.h"
 #include <chrono>
+#include <fstream>
+#include <iomanip>
 
 #include "Scancontext.h" 
 
@@ -58,6 +60,12 @@ GraphBasedSlamComponent::GraphBasedSlamComponent(const rclcpp::NodeOptions & opt
   get_parameter("distance_for_keyframe", distance_for_keyframe_);
   declare_parameter("keyframe_interval", 30);
   get_parameter("keyframe_interval", keyframe_interval_);
+  declare_parameter("tum_log_unoptimized_filename", "/tmp/tum_trajectory_unoptimized.txt");
+  get_parameter("tum_log_unoptimized_filename", tum_log_unoptimized_filename_);
+  declare_parameter("tum_log_optimized_filename", "/tmp/tum_trajectory_optimized.txt");
+  get_parameter("tum_log_optimized_filename", tum_log_optimized_filename_);
+  declare_parameter("map_filename", "map.pcd");
+  get_parameter("map_filename", map_filename_);
 
   std::cout << "registration_method:" << registration_method << std::endl;
   std::cout << "voxel_leaf_size[m]:" << voxel_leaf_size << std::endl;
@@ -760,10 +768,10 @@ void GraphBasedSlamComponent::doPoseAdjustment(
     
     // Set line properties
     edge_marker.scale.x = 0.04; // Line width
-    edge_marker.color.r = 1.0; // Red color
+    edge_marker.color.r = 0.0; // Red color
     edge_marker.color.g = 0.0;
-    edge_marker.color.b = 0.0;
-    edge_marker.color.a = 0.8; // Semi-transparent
+    edge_marker.color.b = 1.0;
+    edge_marker.color.a = 1.0; // Opaque (no transparency)
     
     // Get optimized poses for the loop edge endpoints
     g2o::VertexSE3 * vertex_from = static_cast<g2o::VertexSE3 *>(optimizer.vertex(loop_edges_[i].pair_id.first));
@@ -794,8 +802,56 @@ void GraphBasedSlamComponent::doPoseAdjustment(
   pcl::toROSMsg(*map_ptr, *map_msg_ptr);
   map_msg_ptr->header.frame_id = "map";
   modified_map_pub_->publish(*map_msg_ptr);
-  if (do_save_map) {pcl::io::savePCDFileASCII("map.pcd", *map_ptr);} // too heavy
+  
+  if (do_save_map) {
+    pcl::io::savePCDFileASCII(map_filename_, *map_ptr);
+    RCLCPP_INFO(get_logger(), "Saved map to: %s", map_filename_.c_str());
+    
+    // Log unoptimized trajectory in TUM format
+    logTrajectoryInTUMFormat(map_array_msg, tum_log_unoptimized_filename_);
+    
+    // Log optimized trajectory in TUM format
+    logTrajectoryInTUMFormat(modified_map_array_msg, tum_log_optimized_filename_);
+    
+    RCLCPP_INFO(get_logger(), "Saved trajectories in TUM format:");
+    RCLCPP_INFO(get_logger(), "  Unoptimized: %s", tum_log_unoptimized_filename_.c_str());
+    RCLCPP_INFO(get_logger(), "  Optimized: %s", tum_log_optimized_filename_.c_str());
+  }
 
+}
+
+void GraphBasedSlamComponent::logTrajectoryInTUMFormat(
+  const lidarslam_msgs::msg::MapArray& map_array_msg,
+  const std::string& filename)
+{
+  std::ofstream tum_log;
+  tum_log.open(filename, std::ios::out);
+  
+  if (!tum_log.is_open()) {
+    RCLCPP_WARN(get_logger(), "Failed to open TUM format log file: %s", filename.c_str());
+    return;
+  }
+  
+  // Write header comment
+  tum_log << "# TUM format trajectory file" << std::endl;
+  tum_log << "# timestamp tx ty tz qx qy qz qw" << std::endl;
+  
+  // Log each submap pose
+  for (const auto& submap : map_array_msg.submaps) {
+    double timestamp = submap.header.stamp.sec + submap.header.stamp.nanosec * 1e-9;
+    
+    tum_log << std::fixed << std::setprecision(6) << timestamp << " "
+            << std::setprecision(6) << submap.pose.position.x << " "
+            << submap.pose.position.y << " "
+            << submap.pose.position.z << " "
+            << submap.pose.orientation.x << " "
+            << submap.pose.orientation.y << " "
+            << submap.pose.orientation.z << " "
+            << submap.pose.orientation.w << std::endl;
+  }
+  
+  tum_log.close();
+  RCLCPP_INFO(get_logger(), "Logged %zu poses to %s", map_array_msg.submaps.size(), filename.c_str());
 }
 
 }
