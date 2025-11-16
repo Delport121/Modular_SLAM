@@ -7,7 +7,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     
     # Get the config file path
-    package_dir = get_package_share_directory('scanmatcher')
+    package_dir = get_package_share_directory('frontend_slam')
     config_file = os.path.join(package_dir, 'config', 'scan_to_model.yaml')
 
     # Static transform publisher for lidar to base_link (identity transform)
@@ -20,11 +20,11 @@ def generate_launch_description():
         output='screen'
     )
 
-    # scanmatcher node with high speed configuration
-    scanmatcher_node = Node(
-        package='scanmatcher',
-        executable='scanmatcher_node',
-        name='scanmatcher',
+    # frontend_slam node with high speed configuration
+    frontend_slam_node = Node(
+        package='frontend_slam',
+        executable='frontend_slam_node',
+        name='frontend_slam',
         output='screen',
         parameters=[config_file],
         remappings=[
@@ -39,5 +39,5 @@ def generate_launch_description():
 
     return LaunchDescription([
         static_tf_node,
-        scanmatcher_node,
+        frontend_slam_node,
     ])

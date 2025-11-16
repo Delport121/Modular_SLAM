@@ -1,4 +1,4 @@
-#include "scanmatcher/scanmatcher_component.h"
+#include "frontend_slam/frontend_slam_component.h"
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -21,10 +21,10 @@
 
 using namespace std::chrono_literals;
 
-namespace graphslam
+namespace frontendslam
 {
-ScanMatcherComponent::ScanMatcherComponent(const rclcpp::NodeOptions & options)
-: Node("scan_matcher", options),
+FrontendSlamComponent::FrontendSlamComponent(const rclcpp::NodeOptions & options)
+: Node("frontend_slam", options),
   clock_(RCL_ROS_TIME),
   tfbuffer_(std::make_shared<rclcpp::Clock>(clock_)),
   listener_(tfbuffer_),
@@ -237,7 +237,7 @@ ScanMatcherComponent::ScanMatcherComponent(const rclcpp::NodeOptions & options)
   RCLCPP_INFO(get_logger(), "initialization end");
 }
 
-void ScanMatcherComponent::initializePubSub()
+void FrontendSlamComponent::initializePubSub()
 {
   RCLCPP_INFO(get_logger(), "initialize Publishers and Subscribers");
   // sub
@@ -360,9 +360,11 @@ void ScanMatcherComponent::initializePubSub()
       rclcpp::KeepLast(
         1)).reliable());
   path_pub_ = create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(10));
+
+  RCLCPP_INFO(get_logger(), "initializePubSub end");
 }
 
-void ScanMatcherComponent::initializeMap(const pcl::PointCloud <pcl::PointXYZI>::Ptr & tmp_ptr, const std_msgs::msg::Header & header)
+void FrontendSlamComponent::initializeMap(const pcl::PointCloud <pcl::PointXYZI>::Ptr & tmp_ptr, const std_msgs::msg::Header & header)
 {
   RCLCPP_INFO(get_logger(), "create a first map");
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>());
@@ -413,8 +415,8 @@ void ScanMatcherComponent::initializeMap(const pcl::PointCloud <pcl::PointXYZI>:
   map_pub_->publish(submap.cloud);
 }
 
-void ScanMatcherComponent::receiveCloud(
-  const pcl::PointCloud<pcl::PointXYZI>::ConstPtr & cloud_ptr,
+void FrontendSlamComponent::receiveCloud(
+  const pcl::PointCloud < pcl::PointXYZI> ::ConstPtr & input_cloud_ptr,
   const rclcpp::Time stamp)
 {
   if (mapping_flag_ && mapping_future_.valid()) {
@@ -445,7 +447,7 @@ void ScanMatcherComponent::receiveCloud(
   pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>());
   pcl::VoxelGrid<pcl::PointXYZI> voxel_grid;
   voxel_grid.setLeafSize(vg_size_for_input_, vg_size_for_input_, vg_size_for_input_);
-  voxel_grid.setInputCloud(cloud_ptr);
+  voxel_grid.setInputCloud(input_cloud_ptr);
   voxel_grid.filter(*filtered_cloud_ptr);
   
   // Set up registration based on method
@@ -498,7 +500,7 @@ void ScanMatcherComponent::receiveCloud(
   
   rclcpp::Time time_align_end = system_clock.now();
 
-  publishMapAndPose(cloud_ptr, final_transformation, stamp);
+  publishMapAndPose(input_cloud_ptr, final_transformation, stamp);
 
   if (!debug_flag_) {return;}
 
@@ -537,7 +539,7 @@ void ScanMatcherComponent::receiveCloud(
   logPoseInTUMFormat(stamp, current_pose_stamped_.pose);
 }
 
-void ScanMatcherComponent::publishMapAndPose(
+void FrontendSlamComponent::publishMapAndPose(
   const pcl::PointCloud<pcl::PointXYZI>::ConstPtr & cloud_ptr,
   const Eigen::Matrix4f final_transformation, const rclcpp::Time stamp)
 {
@@ -598,7 +600,7 @@ void ScanMatcherComponent::publishMapAndPose(
     mapping_task_ =
       std::packaged_task<void()>(
       std::bind(
-        &ScanMatcherComponent::updateMap, this, cloud_ptr,
+        &FrontendSlamComponent::updateMap, this, cloud_ptr,
         final_transformation, current_pose_stamped));
     mapping_future_ = mapping_task_.get_future();
     mapping_thread_ = std::thread(std::move(std::ref(mapping_task_)));
@@ -606,7 +608,7 @@ void ScanMatcherComponent::publishMapAndPose(
   }
 }
 
-void ScanMatcherComponent::updateMap(
+void FrontendSlamComponent::updateMap(
   const pcl::PointCloud<pcl::PointXYZI>::ConstPtr cloud_ptr,
   const Eigen::Matrix4f final_transformation,
   const geometry_msgs::msg::PoseStamped current_pose_stamped)
@@ -662,7 +664,7 @@ void ScanMatcherComponent::updateMap(
   }
 }
 
-Eigen::Matrix4f ScanMatcherComponent::getTransformation(const geometry_msgs::msg::Pose pose)
+Eigen::Matrix4f FrontendSlamComponent::getTransformation(const geometry_msgs::msg::Pose pose)
 {
   Eigen::Affine3d affine;
   tf2::fromMsg(pose, affine);
@@ -670,7 +672,7 @@ Eigen::Matrix4f ScanMatcherComponent::getTransformation(const geometry_msgs::msg
   return sim_trans;
 }
 
-void ScanMatcherComponent::receiveImu(const sensor_msgs::msg::Imu msg)
+void FrontendSlamComponent::receiveImu(const sensor_msgs::msg::Imu msg)
 {
   if (!use_imu_) {return;}
 
@@ -695,10 +697,9 @@ void ScanMatcherComponent::receiveImu(const sensor_msgs::msg::Imu msg)
   double imu_time = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9;
 
   lidar_undistortion_.getImu(angular_velo, acc, quat, imu_time);
-
 }
 
-void ScanMatcherComponent::publishMap(const lidarslam_msgs::msg::MapArray & map_array_msg , const std::string & map_frame_id)
+void FrontendSlamComponent::publishMap(const lidarslam_msgs::msg::MapArray & map_array_msg , const std::string & map_frame_id)
 {
   pcl::PointCloud<pcl::PointXYZI>::Ptr map_ptr(new pcl::PointCloud<pcl::PointXYZI>);
   for (auto & submap : map_array_msg.submaps) {
@@ -723,7 +724,7 @@ void ScanMatcherComponent::publishMap(const lidarslam_msgs::msg::MapArray & map_
   map_pub_->publish(*map_msg_ptr);
 }
 
-geometry_msgs::msg::TransformStamped ScanMatcherComponent::calculateMaptoOdomTransform(
+geometry_msgs::msg::TransformStamped FrontendSlamComponent::calculateMaptoOdomTransform(
   const geometry_msgs::msg::TransformStamped &base_to_map_msg,
   const rclcpp::Time stamp
 )
@@ -753,7 +754,7 @@ geometry_msgs::msg::TransformStamped ScanMatcherComponent::calculateMaptoOdomTra
 }
 
 // Scan-to-model helper functions
-small_gicp::PointCloud::Ptr ScanMatcherComponent::pclToSmallGicp(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& pcl_cloud) {
+small_gicp::PointCloud::Ptr FrontendSlamComponent::pclToSmallGicp(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& pcl_cloud) {
   auto points = std::make_shared<small_gicp::PointCloud>();
   points->resize(pcl_cloud->size());
   
@@ -770,7 +771,7 @@ small_gicp::PointCloud::Ptr ScanMatcherComponent::pclToSmallGicp(const pcl::Poin
   return points;
 }
 
-Eigen::Matrix4f ScanMatcherComponent::scanToModelAlignment(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud_ptr, const Eigen::Matrix4f& initial_transform) {
+Eigen::Matrix4f FrontendSlamComponent::scanToModelAlignment(const pcl::PointCloud<pcl::PointXYZI>::ConstPtr& cloud_ptr, const Eigen::Matrix4f& initial_transform) {
   // Convert PCL to small_gicp point cloud
   auto points = pclToSmallGicp(cloud_ptr);
   
@@ -814,7 +815,7 @@ Eigen::Matrix4f ScanMatcherComponent::scanToModelAlignment(const pcl::PointCloud
   return T_world_lidar_.matrix().cast<float>();
 }
 
-void ScanMatcherComponent::logPoseInTUMFormat(const rclcpp::Time& timestamp, const geometry_msgs::msg::Pose& pose) {
+void FrontendSlamComponent::logPoseInTUMFormat(const rclcpp::Time& timestamp, const geometry_msgs::msg::Pose& pose) {
   if (!tum_pose_log_.is_open()) {
     return;
   }
@@ -831,7 +832,7 @@ void ScanMatcherComponent::logPoseInTUMFormat(const rclcpp::Time& timestamp, con
                 << pose.orientation.w << std::endl;
 }
 
-} // namespace graphslam
+} // namespace frontendslam
 
 #include <rclcpp_components/register_node_macro.hpp>
-RCLCPP_COMPONENTS_REGISTER_NODE(graphslam::ScanMatcherComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(frontendslam::FrontendSlamComponent)

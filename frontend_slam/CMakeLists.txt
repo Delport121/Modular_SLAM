@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(scanmatcher)
+project(frontend_slam)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -64,27 +64,27 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_library(scanmatcher_component SHARED
-src/scanmatcher_component.cpp
+add_library(frontend_slam_component SHARED
+src/frontend_slam_component.cpp
 )
 
-target_compile_definitions(scanmatcher_component PRIVATE "GS_SM_BUILDING_DLL")
+target_compile_definitions(frontend_slam_component PRIVATE "GS_SM_BUILDING_DLL")
 
-ament_target_dependencies(scanmatcher_component ${dependencies})
+ament_target_dependencies(frontend_slam_component ${dependencies})
 
 # Remove the copy component library as we're using the main one
 # (copy component library removed)
 
-ament_target_dependencies(scanmatcher_component ${dependencies})
+ament_target_dependencies(frontend_slam_component ${dependencies})
 
-add_executable(scanmatcher_node
-src/scanmatcher_node.cpp
+add_executable(frontend_slam_node
+src/frontend_slam_node.cpp
 )
 
-target_link_libraries(scanmatcher_node
-scanmatcher_component ${PCL_LIBRARIES})
+target_link_libraries(frontend_slam_node
+frontend_slam_component ${PCL_LIBRARIES})
 
-ament_target_dependencies(scanmatcher_node
+ament_target_dependencies(frontend_slam_node
   rclcpp)
 
 include_directories(
@@ -100,17 +100,17 @@ add_definitions(${PCL_DEFINITIONS})
 
 # Link small_gicp if found
 if(small_gicp_FOUND)
-    target_link_libraries(scanmatcher_component small_gicp::small_gicp)
-    target_compile_definitions(scanmatcher_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
+    target_link_libraries(frontend_slam_component small_gicp::small_gicp)
+    target_compile_definitions(frontend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
     message(STATUS "small_gicp found and linked")
 else()
     message(WARNING "small_gicp not found as package, using direct include")
 endif()
 
-rclcpp_components_register_nodes(scanmatcher_component 
-  "graphslam::ScanMatcherComponent")
+rclcpp_components_register_nodes(frontend_slam_component 
+  "frontendslam::FrontendSlamComponent")
 
-ament_export_libraries(scanmatcher_component)
+ament_export_libraries(frontend_slam_component)
 
 install(
   DIRECTORY "include/"
@@ -123,14 +123,14 @@ install(
 )
 
 install(TARGETS
-  scanmatcher_component
+  frontend_slam_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
 install(TARGETS 
-  scanmatcher_node
+  frontend_slam_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

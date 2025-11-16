@@ -1,5 +1,5 @@
-#ifndef GS_SM_COMPONENT__H_INCLUDED
-#define GS_SM_COMPONENT__H_INCLUDED
+#ifndef FRONTEND_SLAM_COMPONENT_H_INCLUDED
+#define FRONTEND_SLAM_COMPONENT_H_INCLUDED
 
 #if __cplusplus
 extern "C" {
@@ -61,7 +61,7 @@ extern "C" {
 #include <nav_msgs/msg/path.hpp>
 
 #include <lidarslam_msgs/msg/map_array.hpp>
-#include "scanmatcher/lidar_undistortion.hpp"
+#include "frontend_slam/lidar_undistortion.hpp"
 
 #include <pclomp/ndt_omp.h>
 #include <pclomp/ndt_omp_impl.hpp>
@@ -77,13 +77,13 @@ extern "C" {
 #include <pcl_conversions/pcl_conversions.h>
 #include <fstream>
 
-namespace graphslam
+namespace frontendslam
 {
-  class ScanMatcherComponent: public rclcpp::Node
+  class FrontendSlamComponent: public rclcpp::Node
   {
 public:
     GS_SM_PUBLIC
-    explicit ScanMatcherComponent(const rclcpp::NodeOptions & options);
+    explicit FrontendSlamComponent(const rclcpp::NodeOptions & options);
     
 
 private:
@@ -218,6 +218,6 @@ private:
     std::ofstream tum_pose_log_;
 
   };
-} // namespace graphslam
+} // namespace frontendslam
 
-#endif  //GS_SM_COMPONENT__H_INCLUDED
+#endif  //FRONTEND_SLAM_COMPONENT_H_INCLUDED

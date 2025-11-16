@@ -35,10 +35,10 @@ def generate_launch_description():
     ndt_thread_num = LaunchConfiguration('ndt_num_threads')
 
     # Node
-    scanmatcher_node = Node(
-        package='scanmatcher',
-        executable='scanmatcher_node',
-        name='scanmatcher',
+    frontend_slam_node = Node(
+        package='frontend_slam',
+        executable='frontend_slam_node',
+        name='frontend_slam',
         output='screen',
         parameters=[
             {'global_frame_id': global_frame_id},
@@ -119,5 +119,5 @@ def generate_launch_description():
         DeclareLaunchArgument('scan_min_range', default_value='0.1'),
         DeclareLaunchArgument('scan_max_range', default_value='50.0'),
         
-        scanmatcher_node,
+        frontend_slam_node,
     ])
