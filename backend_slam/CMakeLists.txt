@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(graph_based_slam)
+project(backend_slam)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -59,14 +59,14 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_library(graph_based_slam_component SHARED
-src/graph_based_slam_component.cpp
+add_library(backend_slam_component SHARED
+src/backend_slam_component.cpp
 ../Thirdparty/scancontext/cpp/module/Scancontext/Scancontext.cpp
 )
 
-target_compile_definitions(graph_based_slam_component PRIVATE "GS_GBS_BUILDING_DLL")
+target_compile_definitions(backend_slam_component PRIVATE "GS_GBS_BUILDING_DLL")
 
-ament_target_dependencies(graph_based_slam_component
+ament_target_dependencies(backend_slam_component
   rclcpp 
   rclcpp_components 
   tf2_ros 
@@ -85,21 +85,21 @@ ament_target_dependencies(graph_based_slam_component
   cv_bridge
 )
 
-target_link_libraries(graph_based_slam_component
+target_link_libraries(backend_slam_component
   g2o::core
   g2o::types_slam3d
   g2o::solver_eigen
 )
 
-add_executable(graph_based_slam_node
-src/graph_based_slam_node.cpp
+add_executable(backend_slam_node
+src/backend_slam_node.cpp
 )
 
-target_link_libraries(graph_based_slam_node
-  graph_based_slam_component
+target_link_libraries(backend_slam_node
+  backend_slam_component
 )
 
-ament_target_dependencies(graph_based_slam_node
+ament_target_dependencies(backend_slam_node
   rclcpp)
 
 include_directories(
@@ -112,10 +112,10 @@ link_directories(
 )
 add_definitions(${PCL_DEFINITIONS})
 
-rclcpp_components_register_nodes(graph_based_slam_component 
-  "graphslam::GraphBasedSlamComponent")
+rclcpp_components_register_nodes(backend_slam_component 
+  "backendslam::BackendSlamComponent")
 
-ament_export_libraries(graph_based_slam_component)
+ament_export_libraries(backend_slam_component)
 
 install(
   DIRECTORY "include/"
@@ -128,14 +128,14 @@ install(
 )
 
 install(TARGETS
-  graph_based_slam_component
+  backend_slam_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
 )
 
 install(TARGETS 
-  graph_based_slam_node
+  backend_slam_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

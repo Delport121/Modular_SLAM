@@ -1,5 +1,5 @@
-#ifndef GS_GBS_COMPONENT_H_INCLUDED
-#define GS_GBS_COMPONENT_H_INCLUDED
+#ifndef BACKEND_SLAM_COMPONENT_H_INCLUDED
+#define BACKEND_SLAM_COMPONENT_H_INCLUDED
 
 #if __cplusplus
 extern "C" {
@@ -91,13 +91,13 @@ extern "C" {
 
 #include <mutex>
 
-namespace graphslam
+namespace backendslam
 {
-  class GraphBasedSlamComponent: public rclcpp::Node
+  class BackendSlamComponent: public rclcpp::Node
   {
   public:
     GS_GBS_PUBLIC
-    explicit GraphBasedSlamComponent(const rclcpp::NodeOptions & options);private:
+    explicit BackendSlamComponent(const rclcpp::NodeOptions & options);private:
     std::mutex mtx_;
 
     rclcpp::Clock clock_;
@@ -188,4 +188,4 @@ namespace graphslam
   };
 }
 
-#endif  //GS_GBS_COPY_COMPONENT_H_INCLUDED
+#endif  //BACKEND_SLAM_COMPONENT_H_INCLUDED

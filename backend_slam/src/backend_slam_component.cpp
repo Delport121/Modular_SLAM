@@ -1,4 +1,4 @@
-#include "graph_based_slam/graph_based_slam_component.h"
+#include "backend_slam/backend_slam_component.h"
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -7,10 +7,10 @@
 
 using namespace std::chrono_literals;
 
-namespace graphslam
+namespace backendslam
 {
-GraphBasedSlamComponent::GraphBasedSlamComponent(const rclcpp::NodeOptions & options)
-: Node("graph_based_slam", options),
+BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
+: Node("backend_slam", options),
   clock_(RCL_ROS_TIME),
   tfbuffer_(std::make_shared<rclcpp::Clock>(clock_)),
   listener_(tfbuffer_),
@@ -153,7 +153,7 @@ GraphBasedSlamComponent::GraphBasedSlamComponent(const rclcpp::NodeOptions & opt
 
 }
 
-void GraphBasedSlamComponent::initializePubSub()
+void BackendSlamComponent::initializePubSub()
 {
   RCLCPP_INFO(get_logger(), "Initialize Publishers and Subscribers");
 
@@ -478,7 +478,7 @@ void GraphBasedSlamComponent::initializePubSub()
 
 }
 
-void GraphBasedSlamComponent::searchLoop()
+void BackendSlamComponent::searchLoop()
 {
 
   // Conditions to run loop detection
@@ -642,7 +642,7 @@ void GraphBasedSlamComponent::searchLoop()
   }
 }
 
-void GraphBasedSlamComponent::doPoseAdjustment(
+void BackendSlamComponent::doPoseAdjustment(
   lidarslam_msgs::msg::MapArray map_array_msg,
   bool do_save_map)
 {
@@ -820,7 +820,7 @@ void GraphBasedSlamComponent::doPoseAdjustment(
 
 }
 
-void GraphBasedSlamComponent::logTrajectoryInTUMFormat(
+void BackendSlamComponent::logTrajectoryInTUMFormat(
   const lidarslam_msgs::msg::MapArray& map_array_msg,
   const std::string& filename)
 {
@@ -857,4 +857,4 @@ void GraphBasedSlamComponent::logTrajectoryInTUMFormat(
 }
 
 #include <rclcpp_components/register_node_macro.hpp>
-RCLCPP_COMPONENTS_REGISTER_NODE(graphslam::GraphBasedSlamComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(backendslam::BackendSlamComponent)

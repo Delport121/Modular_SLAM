@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>graph_based_slam</name>
+  <name>backend_slam</name>
   <version>0.0.0</version>
-  <description>ros2 package of graph based slam</description>
-  <maintainer email="rsasaki0109@gmail.com">sasaki</maintainer>
+  <description>ros2 package of backend slam</description>
+  <maintainer email="delport121@gmail.com">Delport121</maintainer>
   <license>BSD2</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

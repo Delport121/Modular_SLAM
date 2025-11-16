@@ -5,17 +5,17 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
 
-    graphbasedslam_param_dir = launch.substitutions.LaunchConfiguration(
-        'graphbasedslam_param_dir',
+    backendslam_param_dir = launch.substitutions.LaunchConfiguration(
+        'backendslam_param_dir',
         default=os.path.join(
-            get_package_share_directory('graph_based_slam'),
+            get_package_share_directory('backend_slam'),
             'param',
-            'graphbasedslam.yaml'))
+            'backendslam.yaml'))
 
-    graphbasedslam = launch_ros.actions.Node(
-        package='graph_based_slam',
-        executable='graph_based_slam_node',
-        parameters=[graphbasedslam_param_dir],
+    backendslam = launch_ros.actions.Node(
+        package='backend_slam',
+        executable='backend_slam_node',
+        parameters=[backendslam_param_dir],
         output='screen',
         remappings=[
             ('submap', 'submap'), #a200_1057/submap
@@ -29,8 +29,8 @@ def generate_launch_description():
 
     return launch.LaunchDescription([
         launch.actions.DeclareLaunchArgument(
-            'graphbasedslam_param_dir',
-            default_value=graphbasedslam_param_dir,
-            description='Full path to graphbasedslam parameter file to load'),
-        graphbasedslam,
+            'backendslam_param_dir',
+            default_value=backendslam_param_dir,
+            description='Full path to backendslam parameter file to load'),
+        backendslam,
             ])

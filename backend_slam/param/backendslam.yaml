@@ -1,4 +1,4 @@
-graph_based_slam:
+backend_slam:
     ros__parameters:
       registration_method: "NDT"
       voxel_leaf_size: 0.02 
