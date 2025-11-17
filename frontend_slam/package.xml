@@ -4,7 +4,7 @@
   <name>frontend_slam</name>
   <version>0.0.0</version>
   <description>frontend slam package</description>
-  <maintainer email="rsasaki0109@gmail.com">sasaki</maintainer>
+  <maintainer email="delport121@gmail.com">delport121</maintainer>
   <license>BSD2</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
