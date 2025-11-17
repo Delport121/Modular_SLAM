@@ -1,5 +1,5 @@
-#include <scanmatcher/scanmatcher_component.h>
-#include <graph_based_slam/graph_based_slam_component.h>
+#include <frontend_slam/frontend_slam_component.h>
+#include <backend_slam/backend_slam_component.h>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -11,10 +11,10 @@ int main(int argc, char * argv[])
 
   rclcpp::executors::MultiThreadedExecutor exec;
 
-  auto scanmatcher = std::make_shared<graphslam::ScanMatcherComponent>(options);
-  exec.add_node(scanmatcher);
-  auto graphbasedslam = std::make_shared<graphslam::GraphBasedSlamComponent>(options);
-  exec.add_node(graphbasedslam);
+  auto frontend = std::make_shared<frontendslam::FrontendSlamComponent>(options);
+  exec.add_node(frontend);
+  auto backend = std::make_shared<backendslam::BackendSlamComponent>(options);
+  exec.add_node(backend);
 
   exec.spin();
   rclcpp::shutdown();

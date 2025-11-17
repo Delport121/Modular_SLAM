@@ -19,8 +19,8 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(scanmatcher REQUIRED)
-find_package(graph_based_slam REQUIRED)
+find_package(frontend_slam REQUIRED)
+find_package(backend_slam REQUIRED)
 find_package(lidarslam_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -98,8 +98,8 @@ ament_target_dependencies(lidarslam
   visualization_msgs
   pcl_conversions
   std_srvs
-  scanmatcher
-  graph_based_slam
+  frontend_slam
+  backend_slam
   lidarslam_msgs
   ndt_omp_ros2
   OpenCV

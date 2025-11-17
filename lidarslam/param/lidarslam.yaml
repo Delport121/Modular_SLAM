@@ -1,4 +1,4 @@
-scan_matcher:
+frontend_slam:
   ros__parameters:
     global_frame_id: "map"
     robot_frame_id: "base_link"
@@ -27,7 +27,7 @@ scan_matcher:
     use_odom: false
     debug_flag: false
 
-graph_based_slam:
+backend_slam:
     ros__parameters:
       registration_method: "NDT"
       ndt_resolution: 1.0

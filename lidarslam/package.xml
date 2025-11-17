@@ -10,8 +10,8 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>scanmatcher</depend>
-  <depend>graph_based_slam</depend>
+  <depend>frontend_slam</depend>
+  <depend>backend_slam</depend>
   <depend>lidarslam_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>

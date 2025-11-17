@@ -15,8 +15,8 @@ def generate_launch_description():
             'lidarslam_voyager.yaml'))
 
     mapping = launch_ros.actions.Node(
-        package='scanmatcher',
-        executable='scanmatcher_node',
+        package='frontend_slam',
+        executable='frontend_slam_node',
         parameters=[main_param_dir],
         # remappings=[('/input_cloud','/ouster/points')],
         remappings=[('/input_cloud','/points_raw')],
@@ -30,8 +30,8 @@ def generate_launch_description():
     #     )
 
     graphbasedslam = launch_ros.actions.Node(
-        package='graph_based_slam',
-        executable='graph_based_slam_node',
+        package='backend_slam',
+        executable='backend_slam_node',
         parameters=[main_param_dir],
         output='screen'
         )

@@ -22,16 +22,16 @@ def generate_launch_description():
             'mapping_tukuba.rviz'))
 
     mapping = launch_ros.actions.Node(
-        package='scanmatcher',
-        executable='scanmatcher_node',
+        package='frontend_slam',
+        executable='frontend_slam_node',
         parameters=[main_param_dir],
         remappings=[('/input_cloud','/points_raw')],
         output='screen'
         )
 
     graphbasedslam = launch_ros.actions.Node(
-        package='graph_based_slam',
-        executable='graph_based_slam_node',
+        package='backend_slam',
+        executable='backend_slam_node',
         parameters=[main_param_dir],
         output='screen'
         )
