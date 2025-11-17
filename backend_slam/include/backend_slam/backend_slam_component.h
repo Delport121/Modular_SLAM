@@ -73,6 +73,7 @@ extern "C" {
 #include <pclomp/voxel_grid_covariance_omp_impl.hpp>
 #include <pclomp/gicp_omp.h>
 #include <pclomp/gicp_omp_impl.hpp>
+#include <pcl/filters/filter.h>
 
 #include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/optimization_algorithm_levenberg.h"

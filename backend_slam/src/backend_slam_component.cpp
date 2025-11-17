@@ -26,7 +26,7 @@ BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
   get_parameter("registration_method", registration_method);
   declare_parameter("voxel_leaf_size", 0.2);
   get_parameter("voxel_leaf_size", voxel_leaf_size);
-  declare_parameter("ndt_resolution", 5.0);
+  declare_parameter("ndt_resolution", 1.0);
   get_parameter("ndt_resolution", ndt_resolution);
   declare_parameter("ndt_num_threads", 2);
   get_parameter("ndt_num_threads", ndt_num_threads);
@@ -179,7 +179,19 @@ void BackendSlamComponent::initializePubSub()
       pcl::transformPointCloud(
         *latest_submap_cloud_ptr, *transformed_latest_submap_cloud_ptr,
         latest_affine.matrix().cast<float>());
-      registration_->setInputSource(transformed_latest_submap_cloud_ptr);
+
+      // --- FIX: Clean Source Cloud and Check for Empty ---
+      pcl::PointCloud<pcl::PointXYZI>::Ptr cleaned_source_cloud_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+      std::vector<int> nan_indices_source;
+      pcl::removeNaNFromPointCloud(*transformed_latest_submap_cloud_ptr, *cleaned_source_cloud_ptr, nan_indices_source);
+
+      // CRITICAL CHECK: If the source cloud is empty, stop processing this frame.
+      if (cleaned_source_cloud_ptr->points.empty()) {
+          RCLCPP_WARN(get_logger(), "Source cloud is empty after NaN filtering. Skipping keyframe processing.");
+          return;
+      }
+
+      registration_->setInputSource(cleaned_source_cloud_ptr);
       double latest_moving_distance = latest_submap.distance;
 
       // First submap handling
@@ -332,15 +344,33 @@ void BackendSlamComponent::initializePubSub()
           *submap_clouds_ptr += *transformed_submap_cloud_ptr;
         }
 
+        // // Apply voxel grid filter to target submap clouds
+        // pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_clouds_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+        // voxelgrid_.setInputCloud(submap_clouds_ptr);
+        // voxelgrid_.filter(*filtered_clouds_ptr);
+        // registration_->setInputTarget(filtered_clouds_ptr);
+
         // Apply voxel grid filter to target submap clouds
         pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_clouds_ptr(new pcl::PointCloud<pcl::PointXYZI>());
         voxelgrid_.setInputCloud(submap_clouds_ptr);
         voxelgrid_.filter(*filtered_clouds_ptr);
-        registration_->setInputTarget(filtered_clouds_ptr);
+        
+        // --- FIX: Explicitly remove NaNs from the filtered target cloud and check for emptiness ---
+        pcl::PointCloud<pcl::PointXYZI>::Ptr target_cloud_for_reg(new pcl::PointCloud<pcl::PointXYZI>());
+        std::vector<int> nan_indices;
+        pcl::removeNaNFromPointCloud(*filtered_clouds_ptr, *target_cloud_for_reg, nan_indices);
+        
+        // CRITICAL CHECK: If the target cloud is empty, stop the loop closure attempt.
+        if (target_cloud_for_reg->points.empty()) {
+            RCLCPP_WARN(get_logger(), "Target cloud for registration (loop closure) is empty after filtering. Skipping loop closure attempt.");
+            return;
+        }
+
+        registration_->setInputTarget(target_cloud_for_reg);
 
         // Publish transformed latest submap (source cloud)
         sensor_msgs::msg::PointCloud2 transformed_latest_submap_msg;
-        pcl::toROSMsg(*transformed_latest_submap_cloud_ptr, transformed_latest_submap_msg);
+        pcl::toROSMsg(*cleaned_source_cloud_ptr, transformed_latest_submap_msg);
         transformed_latest_submap_msg.header.frame_id = "map";
         transformed_latest_submap_msg.header.stamp = this->get_clock()->now();
         transformed_latest_submap_pub_->publish(transformed_latest_submap_msg);
