@@ -1,28 +1,21 @@
 cmake_minimum_required(VERSION 3.5)
 project(backend_slam)
 
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
+# ────────────────────────────────────────────────
+# Language Standards
+# ────────────────────────────────────────────────
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
 
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  #add_compile_options(-Wall -Wextra -Wpedantic)
-  #add_compile_options(-Wextra -Wpedantic)
-endif()
-
-SET(CMAKE_CXX_FLAGS "-O2 -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-O2 -g ${CMAKE_CXX_FLAGS}")
 add_compile_definitions(G2O_USE_VENDORED_CERES)
 
-# Find missing symbols during link time
+# For catching missing symbols at link time
 add_link_options(-Wl,--no-undefined)
 
-# find dependencies
+# ────────────────────────────────────────────────
+# Dependencies
+# ────────────────────────────────────────────────
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -39,34 +32,16 @@ find_package(pcl_conversions REQUIRED)
 find_package(lidarslam_msgs REQUIRED)
 find_package(ndt_omp_ros2 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(g2o REQUIRED
-COMPONENTS
-g2o::core
-g2o::types_slam3d
-g2o::solver_eigen
+find_package(g2o REQUIRED COMPONENTS
+  g2o::core
+  g2o::types_slam3d
+  g2o::solver_eigen
 )
 find_package(OpenMP)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
 
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
-add_library(backend_slam_component SHARED
-src/backend_slam_component.cpp
-../Thirdparty/scancontext/cpp/module/Scancontext/Scancontext.cpp
-)
-
-target_compile_definitions(backend_slam_component PRIVATE "GS_GBS_BUILDING_DLL")
-
-ament_target_dependencies(backend_slam_component
+set(dependencies
   rclcpp 
   rclcpp_components 
   tf2_ros 
@@ -85,40 +60,63 @@ ament_target_dependencies(backend_slam_component
   cv_bridge
 )
 
+# ────────────────────────────────────────────────
+# OpenMP
+# ────────────────────────────────────────────────
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+# ────────────────────────────────────────────────
+# Component Library
+# ────────────────────────────────────────────────
+add_library(backend_slam_component SHARED
+  src/backend_slam_component.cpp
+  ../Thirdparty/scancontext/cpp/module/Scancontext/Scancontext.cpp
+)
+
+target_compile_definitions(backend_slam_component PRIVATE "GS_GBS_BUILDING_DLL")
+
+ament_target_dependencies(backend_slam_component ${dependencies})
+
 target_link_libraries(backend_slam_component
   g2o::core
   g2o::types_slam3d
   g2o::solver_eigen
 )
 
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Thirdparty/scancontext/cpp/module/Scancontext
+)
+
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
+rclcpp_components_register_nodes(backend_slam_component 
+  "backendslam::BackendSlamComponent"
+)
+
+# ────────────────────────────────────────────────
+# Node Executable
+# ────────────────────────────────────────────────
 add_executable(backend_slam_node
-src/backend_slam_node.cpp
+  src/backend_slam_node.cpp
 )
 
 target_link_libraries(backend_slam_node
   backend_slam_component
 )
 
-ament_target_dependencies(backend_slam_node
-  rclcpp)
+ament_target_dependencies(backend_slam_node rclcpp)
 
-include_directories(
-    include
-    ${PCL_INCLUDE_DIRS}
-    ../Thirdparty/scancontext/cpp/module/Scancontext
-)
-link_directories(
-  ${PCL_LIBRARY_DIRS}
-)
-add_definitions(${PCL_DEFINITIONS})
-
-rclcpp_components_register_nodes(backend_slam_component 
-  "backendslam::BackendSlamComponent")
-
-ament_export_libraries(backend_slam_component)
-
+# ────────────────────────────────────────────────
+# Install
+# ────────────────────────────────────────────────
 install(
-  DIRECTORY "include/"
+  DIRECTORY include/
   DESTINATION include
 )
 
@@ -131,7 +129,7 @@ install(TARGETS
   backend_slam_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION lib
 )
 
 install(TARGETS 
@@ -139,5 +137,11 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# ────────────────────────────────────────────────
+# Export
+# ────────────────────────────────────────────────
 ament_export_include_directories(include)
+ament_export_libraries(backend_slam_component)
+ament_export_dependencies(${dependencies})
+
 ament_package()

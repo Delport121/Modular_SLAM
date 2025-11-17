@@ -1,7 +1,7 @@
 # Small GICP Configuration for High Accuracy (Indoor/Structured Environments)
 # Uses GICP with fine-tuned parameters for maximum accuracy
 
-scanmatcher:
+frontend_slam:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"

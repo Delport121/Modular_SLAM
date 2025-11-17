@@ -1,7 +1,7 @@
 # Scan-to-Model Configuration
 # Optimized for the scan-to-model pipeline using small_gicp GaussianVoxelMap
 
-scanmatcher:
+frontend_slam:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"

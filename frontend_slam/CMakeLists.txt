@@ -1,25 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 project(frontend_slam)
 
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
+# Default C standards
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 14)
 
-# Default to C++14
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
-endif()
+set(CMAKE_CXX_FLAGS "-O2 -g ${CMAKE_CXX_FLAGS}")
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  #add_compile_options(-Wall -Wextra -Wpedantic)
-  #add_compile_options(-Wextra -Wpedantic)
-endif()
-
-#SET(CMAKE_BUILD_TYPE "RELEASE")
-SET(CMAKE_CXX_FLAGS "-O2 -g ${CMAKE_CXX_FLAGS}")
-
-# find dependencies
+# Dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -36,9 +24,6 @@ find_package(ndt_omp_ros2 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(OpenMP)
 
-# Try to find small_gicp
-find_package(small_gicp REQUIRED)
-
 set(dependencies
   rclcpp 
   rclcpp_components 
@@ -54,66 +39,60 @@ set(dependencies
   ndt_omp_ros2
 )
 
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
-
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
+# ────────────────────────────────────────────────
+# Build component library
+# ────────────────────────────────────────────────
 add_library(frontend_slam_component SHARED
-src/frontend_slam_component.cpp
+  src/frontend_slam_component.cpp
 )
 
 target_compile_definitions(frontend_slam_component PRIVATE "GS_SM_BUILDING_DLL")
-
 ament_target_dependencies(frontend_slam_component ${dependencies})
-
-# Remove the copy component library as we're using the main one
-# (copy component library removed)
-
-ament_target_dependencies(frontend_slam_component ${dependencies})
-
-add_executable(frontend_slam_node
-src/frontend_slam_node.cpp
-)
-
-target_link_libraries(frontend_slam_node
-frontend_slam_component ${PCL_LIBRARIES})
-
-ament_target_dependencies(frontend_slam_node
-  rclcpp)
 
 include_directories(
-    include
-    ${PCL_INCLUDE_DIRS}
-    # ${CMAKE_CURRENT_SOURCE_DIR}/../../small_gicp/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/../Thirdparty/small_gicp/include
+  include
+  ${PCL_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Thirdparty/small_gicp/include
 )
-link_directories(
-  ${PCL_LIBRARY_DIRS}
-)
+
+link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
+
+if(OPENMP_FOUND)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 # Link small_gicp if found
 if(small_gicp_FOUND)
-    target_link_libraries(frontend_slam_component small_gicp::small_gicp)
-    target_compile_definitions(frontend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
-    message(STATUS "small_gicp found and linked")
-else()
-    message(WARNING "small_gicp not found as package, using direct include")
+  target_link_libraries(frontend_slam_component small_gicp::small_gicp)
+  target_compile_definitions(frontend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
 endif()
 
 rclcpp_components_register_nodes(frontend_slam_component 
-  "frontendslam::FrontendSlamComponent")
+  "frontendslam::FrontendSlamComponent"
+)
 
-ament_export_libraries(frontend_slam_component)
+# ────────────────────────────────────────────────
+# Build node wrapper
+# ────────────────────────────────────────────────
+add_executable(frontend_slam_node
+  src/frontend_slam_node.cpp
+)
 
+target_link_libraries(frontend_slam_node
+  frontend_slam_component
+  ${PCL_LIBRARIES}
+)
+
+ament_target_dependencies(frontend_slam_node rclcpp)
+
+
+# ────────────────────────────────────────────────
+# Install
+# ────────────────────────────────────────────────
 install(
-  DIRECTORY "include/"
+  DIRECTORY include/
   DESTINATION include
 )
 
@@ -122,18 +101,30 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(TARGETS
-  frontend_slam_component
+#install(
+#  TARGETS frontend_slam_component
+#  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+#  LIBRARY DESTINATION lib/${PROJECT_NAME}
+#  RUNTIME DESTINATION lib/${PROJECT_NAME}
+#)
+install(
+  TARGETS frontend_slam_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+  RUNTIME DESTINATION lib
 )
 
-install(TARGETS 
-  frontend_slam_node
+
+install(
+  TARGETS frontend_slam_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# ────────────────────────────────────────────────
+# Export
+# ────────────────────────────────────────────────
 ament_export_include_directories(include)
+ament_export_libraries(frontend_slam_component)
 ament_export_dependencies(${dependencies})
+
 ament_package()

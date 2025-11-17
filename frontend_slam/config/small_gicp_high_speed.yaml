@@ -1,7 +1,7 @@
 # Small GICP Configuration for High Speed (Outdoor/Real-time Applications)
 # Uses VGICP with optimized parameters for maximum performance
 
-scanmatcher:
+frontend_slam:
   ros__parameters:
     # Frame IDs
     global_frame_id: "map"
