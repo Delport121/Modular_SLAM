@@ -3,6 +3,11 @@
 #include <fstream>
 #include <iomanip>
 
+// Small GICP PCL interface
+#ifdef BUILD_WITH_SMALL_GICP_PCL
+#include <small_gicp/pcl/pcl_registration.hpp>
+#endif
+
 #include "Scancontext.h" 
 
 using namespace std::chrono_literals;
@@ -30,6 +35,14 @@ BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
   get_parameter("ndt_resolution", ndt_resolution);
   declare_parameter("ndt_num_threads", 2);
   get_parameter("ndt_num_threads", ndt_num_threads);
+  declare_parameter("small_gicp_num_neighbors", 10);
+  get_parameter("small_gicp_num_neighbors", small_gicp_num_neighbors_);
+  declare_parameter("small_gicp_voxel_resolution", 1.0);
+  get_parameter("small_gicp_voxel_resolution", small_gicp_voxel_resolution_);
+  declare_parameter("small_gicp_registration_type", "GICP");
+  get_parameter("small_gicp_registration_type", small_gicp_registration_type_);
+  declare_parameter("small_gicp_max_correspondence_distance", 1.0);
+  get_parameter("small_gicp_max_correspondence_distance", small_gicp_max_correspondence_distance_);
   declare_parameter("loop_detection_period", 1000);
   get_parameter("loop_detection_period", loop_detection_period_);
   declare_parameter("threshold_loop_closure_score", 1.0);
@@ -64,6 +77,8 @@ BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
   get_parameter("tum_log_unoptimized_filename", tum_log_unoptimized_filename_);
   declare_parameter("tum_log_optimized_filename", "/tmp/tum_trajectory_optimized.txt");
   get_parameter("tum_log_optimized_filename", tum_log_optimized_filename_);
+  declare_parameter("loop_edges_log_filename", "/tmp/loop_edges.txt");
+  get_parameter("loop_edges_log_filename", loop_edges_log_filename_);
   declare_parameter("map_filename", "map.pcd");
   get_parameter("map_filename", map_filename_);
 
@@ -71,6 +86,10 @@ BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
   std::cout << "voxel_leaf_size[m]:" << voxel_leaf_size << std::endl;
   std::cout << "ndt_resolution[m]:" << ndt_resolution << std::endl;
   std::cout << "ndt_num_threads:" << ndt_num_threads << std::endl;
+  std::cout << "small_gicp_num_neighbors:" << small_gicp_num_neighbors_ << std::endl;
+  std::cout << "small_gicp_voxel_resolution[m]:" << small_gicp_voxel_resolution_ << std::endl;
+  std::cout << "small_gicp_registration_type:" << small_gicp_registration_type_ << std::endl;
+  std::cout << "small_gicp_max_correspondence_distance[m]:" << small_gicp_max_correspondence_distance_ << std::endl;
   std::cout << "loop_detection_period[Hz]:" << loop_detection_period_ << std::endl;
   std::cout << "threshold_loop_closure_score:" << threshold_loop_closure_score_ << std::endl;
   std::cout << "distance_loop_closure[m]:" << distance_loop_closure_ << std::endl;
@@ -123,6 +142,25 @@ BackendSlamComponent::BackendSlamComponent(const rclcpp::NodeOptions & options)
     gicp->setEuclideanFitnessEpsilon(1e-6);
     gicp->setRANSACIterations(0);
     registration_ = gicp;
+  } else if (registration_method == "SMALL_GICP") {
+#ifdef BUILD_WITH_SMALL_GICP_PCL
+    boost::shared_ptr<small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>>
+      small_gicp_reg(new small_gicp::RegistrationPCL<pcl::PointXYZI, pcl::PointXYZI>());
+    
+    // Configure small_gicp parameters
+    small_gicp_reg->setNumThreads(ndt_num_threads);
+    small_gicp_reg->setNumNeighborsForCovariance(small_gicp_num_neighbors_);
+    small_gicp_reg->setVoxelResolution(small_gicp_voxel_resolution_);
+    small_gicp_reg->setRegistrationType(small_gicp_registration_type_);
+    small_gicp_reg->setMaxCorrespondenceDistance(small_gicp_max_correspondence_distance_);
+    small_gicp_reg->setTransformationEpsilon(1e-6);
+    
+    registration_ = small_gicp_reg;
+    RCLCPP_INFO(get_logger(), "Using Small GICP registration with type: %s", small_gicp_registration_type_.c_str());
+#else
+    RCLCPP_ERROR(get_logger(), "Small GICP not available. Compile with BUILD_WITH_SMALL_GICP_PCL=ON");
+    exit(1);
+#endif
   } else {
     RCLCPP_ERROR(get_logger(), "invalid registration_method");
     exit(1);
@@ -843,9 +881,13 @@ void BackendSlamComponent::doPoseAdjustment(
     // Log optimized trajectory in TUM format
     logTrajectoryInTUMFormat(modified_map_array_msg, tum_log_optimized_filename_);
     
+    // Log loop edges
+    logLoopEdges(loop_edges_log_filename_);
+    
     RCLCPP_INFO(get_logger(), "Saved trajectories in TUM format:");
     RCLCPP_INFO(get_logger(), "  Unoptimized: %s", tum_log_unoptimized_filename_.c_str());
     RCLCPP_INFO(get_logger(), "  Optimized: %s", tum_log_optimized_filename_.c_str());
+    RCLCPP_INFO(get_logger(), "Saved loop edges log: %s", loop_edges_log_filename_.c_str());
   }
 
 }
@@ -882,6 +924,44 @@ void BackendSlamComponent::logTrajectoryInTUMFormat(
   
   tum_log.close();
   RCLCPP_INFO(get_logger(), "Logged %zu poses to %s", map_array_msg.submaps.size(), filename.c_str());
+}
+
+void BackendSlamComponent::logLoopEdges(const std::string& filename)
+{
+  std::ofstream loop_log;
+  loop_log.open(filename, std::ios::out);
+  
+  if (!loop_log.is_open()) {
+    RCLCPP_WARN(get_logger(), "Failed to open loop edges log file: %s", filename.c_str());
+    return;
+  }
+  
+  // Write header comment
+  loop_log << "# Loop edges log file" << std::endl;
+  loop_log << "# Total loop closures detected: " << loop_edges_.size() << std::endl;
+  loop_log << "# Format: from_id to_id tx ty tz qx qy qz qw" << std::endl;
+  
+  // Log each loop edge
+  for (const auto& loop_edge : loop_edges_) {
+    Eigen::Affine3d relative_pose_affine(loop_edge.relative_pose.matrix());
+    Eigen::Quaterniond quat(relative_pose_affine.rotation());
+    Eigen::Vector3d trans = relative_pose_affine.translation();
+    
+    loop_log << std::fixed << std::setprecision(0) 
+             << loop_edge.pair_id.first << " " 
+             << loop_edge.pair_id.second << " "
+             << std::setprecision(6)
+             << trans.x() << " "
+             << trans.y() << " "
+             << trans.z() << " "
+             << quat.x() << " "
+             << quat.y() << " "
+             << quat.z() << " "
+             << quat.w() << std::endl;
+  }
+  
+  loop_log.close();
+  RCLCPP_INFO(get_logger(), "Logged %zu loop edges to %s", loop_edges_.size(), filename.c_str());
 }
 
 }

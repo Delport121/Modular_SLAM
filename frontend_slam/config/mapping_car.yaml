@@ -10,3 +10,4 @@ frontend_slam:
       use_imu: false
       debug_flag: false
       tum_log_filename: "/home/ruan/dev_ws/tum_trajectory.txt"
+      iteration_log_filename: "/home/ruan/dev_ws/iteration_log.txt"

@@ -27,4 +27,6 @@ The package currently has the following features:
 - Specialized configurations for different robot platforms
 
 ## Original README Content Below:
+
+- SCAN context paramters needs to be tuned in its header file in the Thirdparty folder. Its const variables it cannot be changed with ros
 ---

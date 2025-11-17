@@ -75,6 +75,11 @@ extern "C" {
 #include <pclomp/gicp_omp_impl.hpp>
 #include <pcl/filters/filter.h>
 
+// Small GICP PCL interface
+#ifdef BUILD_WITH_SMALL_GICP_PCL
+#include <small_gicp/pcl/pcl_registration.hpp>
+#endif
+
 #include "g2o/core/sparse_optimizer.h"
 #include "g2o/core/optimization_algorithm_levenberg.h"
 #include "g2o/core/block_solver.h"
@@ -146,6 +151,9 @@ namespace backendslam
     void logTrajectoryInTUMFormat(
       const lidarslam_msgs::msg::MapArray& map_array_msg,
       const std::string& filename);
+    
+    // Loop edges logging
+    void logLoopEdges(const std::string& filename);
 
     // loop search parameter
     int loop_detection_period_;
@@ -180,9 +188,16 @@ namespace backendslam
     bool debug_flag_ {false};
     bool headless_debug_flag_ {false};
     
+    // Small GICP parameters
+    int small_gicp_num_neighbors_ {10};
+    double small_gicp_voxel_resolution_ {1.0};
+    std::string small_gicp_registration_type_ {"GICP"};
+    double small_gicp_max_correspondence_distance_ {1.0};
+    
     // TUM format logging
     std::string tum_log_unoptimized_filename_;
     std::string tum_log_optimized_filename_;
+    std::string loop_edges_log_filename_;
     
     // Map saving
     std::string map_filename_;

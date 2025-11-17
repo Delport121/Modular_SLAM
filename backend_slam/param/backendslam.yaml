@@ -1,9 +1,16 @@
 backend_slam:
     ros__parameters:
-      registration_method: "NDT"
-      voxel_leaf_size: 0.02 
+      registration_method: "SMALL_GICP" #NDT
+      voxel_leaf_size: 0.2  
       ndt_resolution: 1.0
       ndt_num_threads: 2
+      
+      # Small GICP parameters (when registration_method is SMALL_GICP)
+      small_gicp_num_neighbors: 12
+      small_gicp_voxel_resolution: 0.1
+      small_gicp_registration_type: "GICP"  # GICP or VGICP
+      small_gicp_max_correspondence_distance: 1.0
+      
       loop_detection_period: 3000
       threshold_loop_closure_score: 1.0
       distance_loop_closure: 10.0
@@ -30,3 +37,5 @@ backend_slam:
       
       # Map saving
       map_filename: "/home/ruan/dev_ws/map.pcd"
+      # Loop edges logging
+      loop_edges_log_filename: "/home/ruan/dev_ws/loop_edges.txt"

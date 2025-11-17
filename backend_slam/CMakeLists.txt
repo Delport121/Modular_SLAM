@@ -86,10 +86,17 @@ target_link_libraries(backend_slam_component
   g2o::solver_eigen
 )
 
+# Link small_gicp if found
+if(small_gicp_FOUND)
+  target_link_libraries(backend_slam_component small_gicp::small_gicp)
+  target_compile_definitions(backend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
+endif()
+
 include_directories(
   include
   ${PCL_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/../Thirdparty/scancontext/cpp/module/Scancontext
+  ${CMAKE_CURRENT_SOURCE_DIR}/../Thirdparty/small_gicp/include
 )
 
 link_directories(${PCL_LIBRARY_DIRS})

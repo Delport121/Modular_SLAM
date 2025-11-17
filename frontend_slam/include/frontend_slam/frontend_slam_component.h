@@ -150,6 +150,9 @@ private:
     
     // TUM format logging
     void logPoseInTUMFormat(const rclcpp::Time& timestamp, const geometry_msgs::msg::Pose& pose);
+    
+    // Iteration logging
+    void logIterationStats(double iteration_time_ms, double distance_moved);
 
     bool initial_pose_received_ {false};
     bool initial_cloud_received_ {false};
@@ -216,6 +219,11 @@ private:
     // TUM format logging
     std::string tum_log_filename_;
     std::ofstream tum_pose_log_;
+    
+    // Iteration stats logging
+    std::string iteration_log_filename_;
+    std::ofstream iteration_log_;
+    double total_iteration_time_ {0.0};
 
   };
 } // namespace frontendslam

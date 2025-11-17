@@ -118,6 +118,8 @@ FrontendSlamComponent::FrontendSlamComponent(const rclcpp::NodeOptions & options
   get_parameter("debug_flag", debug_flag_);
   declare_parameter("tum_log_filename", "/tmp/tum_trajectory.txt");
   get_parameter("tum_log_filename", tum_log_filename_);
+  declare_parameter("iteration_log_filename", "/tmp/iteration_stats.txt");
+  get_parameter("iteration_log_filename", iteration_log_filename_);
 
   std::cout << "registration_method:" << registration_method_ << std::endl;
   std::cout << "ndt_resolution[m]:" << ndt_resolution << std::endl;
@@ -232,6 +234,16 @@ FrontendSlamComponent::FrontendSlamComponent(const rclcpp::NodeOptions & options
     } else {
       RCLCPP_WARN(get_logger(), "Failed to open TUM format log file: %s", tum_log_filename_.c_str());
     }
+    
+    // Initialize iteration stats logging
+    iteration_log_.open(iteration_log_filename_, std::ios::out);
+    if (iteration_log_.is_open()) {
+      RCLCPP_INFO(get_logger(), "Iteration stats logging enabled: %s", iteration_log_filename_.c_str());
+      // Write header
+      iteration_log_ << "iteration,time_ms,distance_moved,avg_time_ms" << std::endl;
+    } else {
+      RCLCPP_WARN(get_logger(), "Failed to open iteration log file: %s", iteration_log_filename_.c_str());
+    }
   }
 
   RCLCPP_INFO(get_logger(), "initialization end");
@@ -321,12 +333,10 @@ void FrontendSlamComponent::initializePubSub()
       double pipeline_time_ms = (pipeline_end.seconds() - pipeline_start.seconds()) * 1000.0;
       RCLCPP_INFO(get_logger(), "Iteration count: %d, Pipeline time: %.3fms", iteration_count_, pipeline_time_ms);
       
-      // // Save pipeline time to file in workspace
-      // std::ofstream pipeline_log("/home/ruan/dev_ws/pipeline_times.txt", std::ios::app);
-      // if (pipeline_log.is_open()) {
-      //   pipeline_log << pipeline_time_ms << "\n";
-      //   pipeline_log.close();
-      // }
+      // Log iteration stats if debug flag is enabled
+      if (debug_flag_) {
+        logIterationStats(pipeline_time_ms, submap_distance_);
+      }
 
     };
 
@@ -511,7 +521,7 @@ void FrontendSlamComponent::receiveCloud(
 
   std::cout << "---------------------------------------------------------" << std::endl;
   std::cout << "nanoseconds: " << stamp.nanoseconds() << std::endl;
-  std::cout << "trans: " << trans_ << std::endl;
+  std::cout << "submap_moving_distance: " << submap_distance_ << std::endl;
   std::cout << "align time:" << time_align_end.seconds() - time_align_start.seconds() << "s" <<
     std::endl;
   std::cout << "number of filtered cloud points: " << filtered_cloud_ptr->size() << std::endl;
@@ -830,6 +840,24 @@ void FrontendSlamComponent::logPoseInTUMFormat(const rclcpp::Time& timestamp, co
                 << pose.orientation.y << " "
                 << pose.orientation.z << " "
                 << pose.orientation.w << std::endl;
+}
+
+void FrontendSlamComponent::logIterationStats(double iteration_time_ms, double distance_moved) {
+  if (!iteration_log_.is_open()) {
+    return;
+  }
+  
+  // Update cumulative time
+  total_iteration_time_ += iteration_time_ms;
+  
+  // Calculate average time
+  double avg_time_ms = total_iteration_time_ / iteration_count_;
+  
+  // Log: iteration, time_ms, distance_moved, avg_time_ms
+  iteration_log_ << iteration_count_ << ","
+                 << std::fixed << std::setprecision(3) << iteration_time_ms << ","
+                 << std::setprecision(6) << distance_moved << ","
+                 << std::setprecision(3) << avg_time_ms << std::endl;
 }
 
 } // namespace frontendslam
