@@ -86,11 +86,8 @@ target_link_libraries(backend_slam_component
   g2o::solver_eigen
 )
 
-# Link small_gicp if found
-if(small_gicp_FOUND)
-  target_link_libraries(backend_slam_component small_gicp::small_gicp)
-  target_compile_definitions(backend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
-endif()
+# Enable small_gicp (header-only from Thirdparty)
+target_compile_definitions(backend_slam_component PRIVATE BUILD_WITH_SMALL_GICP_PCL)
 
 include_directories(
   include

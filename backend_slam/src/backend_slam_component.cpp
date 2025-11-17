@@ -315,6 +315,7 @@ void BackendSlamComponent::initializePubSub()
       int id_min = 0;
       double min_dist = std::numeric_limits<double>::max();
       double sc_yaw_difference_ = 0.0;
+      int actual_detection_type = 0; // Track which method found the loop: 1=RS, 2=SC
       lidarslam_msgs::msg::SubMap min_submap;
       Eigen::Vector3d latest_submap_pos{
         latest_submap.pose.position.x,
@@ -337,6 +338,7 @@ void BackendSlamComponent::initializePubSub()
               id_min = i;
               min_dist = dist;
               min_submap = submap;
+              actual_detection_type = 1; // RS (Radius Search)
               std::cout << "[RS] Candidate found - id:" << i << " Latest id:" << num_submaps - 1 << " distance:" << dist << std::endl;
             }
           }
@@ -356,6 +358,7 @@ void BackendSlamComponent::initializePubSub()
           Eigen::Vector3d sc_submap_pos{min_submap.pose.position.x, min_submap.pose.position.y, min_submap.pose.position.z}; // Calculate distance for logging
           min_dist = (latest_submap_pos - sc_submap_pos).norm();
           sc_yaw_difference_ = sc_yaw_diff;
+          actual_detection_type = 2; // SC (Scan Context)
           if (debug_flag_) {
             std::cout << "[SC] Candidate found - id:" << sc_loop_id << " Latest id:" << num_submaps - 1 << " distance:" << min_dist << " yaw_diff:" << sc_yaw_diff << std::endl;
           }
@@ -464,6 +467,7 @@ void BackendSlamComponent::initializePubSub()
           Eigen::Isometry3d to = Eigen::Isometry3d(
             registration_->getFinalTransformation().cast<double>() * init_affine.matrix());
           loop_edge.relative_pose = Eigen::Isometry3d(from.inverse() * to);
+          loop_edge.detection_type = actual_detection_type; // 1=RS, 2=SC
           loop_edges_.push_back(loop_edge);
           
           // Log loop closure information and perform pose adjustment
@@ -595,6 +599,7 @@ void BackendSlamComponent::searchLoop()
     latest_submap.pose.position.z};
   int id_min = 0;
   double min_dist = std::numeric_limits<double>::max();
+  int actual_detection_type = 0; // Track which method found the loop: 1=RS, 2=SC
   lidarslam_msgs::msg::SubMap min_submap;
   for (int i = 0; i < num_submaps; i++) {
     auto submap = map_array_msg.submaps[i];
@@ -609,6 +614,7 @@ void BackendSlamComponent::searchLoop()
         id_min = i;
         min_dist = dist;
         min_submap = submap;
+        actual_detection_type = 1; // RS (Radius Search)
       }
     }
   }
@@ -633,6 +639,7 @@ void BackendSlamComponent::searchLoop()
       min_submap = map_array_msg.submaps[sc_loop_id];
       Eigen::Vector3d sc_submap_pos{min_submap.pose.position.x, min_submap.pose.position.y, min_submap.pose.position.z}; // Calculate distance for logging
       min_dist = (latest_submap_pos - sc_submap_pos).norm();
+      actual_detection_type = 2; // SC (Scan Context)
       if (debug_flag_) {
         std::cout << "[SC] Candidate found - id:" << sc_loop_id << " Latest id:" << num_submaps - 1 << " distance:" << min_dist << " yaw_diff:" << sc_yaw_diff << std::endl;
       }
@@ -694,6 +701,7 @@ void BackendSlamComponent::searchLoop()
       Eigen::Isometry3d to = Eigen::Isometry3d(
         registration_->getFinalTransformation().cast<double>() * init_affine.matrix());
       loop_edge.relative_pose = Eigen::Isometry3d(from.inverse() * to);
+      loop_edge.detection_type = actual_detection_type; // 1=RS, 2=SC
       loop_edges_.push_back(loop_edge);
       
       // Log loop closure information and perform pose adjustment
@@ -836,9 +844,19 @@ void BackendSlamComponent::doPoseAdjustment(
     
     // Set line properties
     edge_marker.scale.x = 0.04; // Line width
-    edge_marker.color.r = 0.0; // Red color
-    edge_marker.color.g = 0.0;
-    edge_marker.color.b = 1.0;
+    
+    // Color based on detection type: RS=Blue, SC=Green
+    if (loop_edges_[i].detection_type == 1) {
+      // RS (Radius Search) - Blue
+      edge_marker.color.r = 0.0;
+      edge_marker.color.g = 0.0;
+      edge_marker.color.b = 1.0;
+    } else {
+      // SC (Scan Context) - Yellow
+      edge_marker.color.r = 1.0;
+      edge_marker.color.g = 1.0;
+      edge_marker.color.b = 0.0;
+    }
     edge_marker.color.a = 1.0; // Opaque (no transparency)
     
     // Get optimized poses for the loop edge endpoints
@@ -939,7 +957,8 @@ void BackendSlamComponent::logLoopEdges(const std::string& filename)
   // Write header comment
   loop_log << "# Loop edges log file" << std::endl;
   loop_log << "# Total loop closures detected: " << loop_edges_.size() << std::endl;
-  loop_log << "# Format: from_id to_id tx ty tz qx qy qz qw" << std::endl;
+  loop_log << "# Detection types: 1=RS (Radius Search), 2=SC (Scan Context)" << std::endl;
+  loop_log << "# Format: from_id to_id detection_type tx ty tz qx qy qz qw" << std::endl;
   
   // Log each loop edge
   for (const auto& loop_edge : loop_edges_) {
@@ -950,6 +969,7 @@ void BackendSlamComponent::logLoopEdges(const std::string& filename)
     loop_log << std::fixed << std::setprecision(0) 
              << loop_edge.pair_id.first << " " 
              << loop_edge.pair_id.second << " "
+             << loop_edge.detection_type << " "
              << std::setprecision(6)
              << trans.x() << " "
              << trans.y() << " "

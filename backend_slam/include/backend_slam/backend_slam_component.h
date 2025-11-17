@@ -174,6 +174,7 @@ namespace backendslam
     {
       std::pair < int, int > pair_id;
       Eigen::Isometry3d relative_pose;
+      int detection_type; // 1 = RS (Radius Search), 2 = SC (Scan Context)
     };
     std::vector < LoopEdge > loop_edges_;
 
