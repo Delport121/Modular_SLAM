@@ -46,7 +46,30 @@
 class LidarUndistortion
 {
 public:
-  LidarUndistortion() {}
+  LidarUndistortion() {
+    // Initialize all arrays to zero to prevent uninitialized memory access
+    std::cout << "[LidarUndistortion] Constructor called - initializing arrays" << std::endl;
+    imu_time_.fill(0.0);
+    imu_roll_.fill(0.0f);
+    imu_pitch_.fill(0.0f);
+    imu_yaw_.fill(0.0f);
+    imu_acc_x_.fill(0.0f);
+    imu_acc_y_.fill(0.0f);
+    imu_acc_z_.fill(0.0f);
+    imu_velo_x_.fill(0.0f);
+    imu_velo_y_.fill(0.0f);
+    imu_velo_z_.fill(0.0f);
+    imu_shift_x_.fill(0.0f);
+    imu_shift_y_.fill(0.0f);
+    imu_shift_z_.fill(0.0f);
+    imu_angular_velo_x_.fill(0.0f);
+    imu_angular_velo_y_.fill(0.0f);
+    imu_angular_velo_z_.fill(0.0f);
+    imu_angular_rot_x_.fill(0.0f);
+    imu_angular_rot_y_.fill(0.0f);
+    imu_angular_rot_z_.fill(0.0f);
+    std::cout << "[LidarUndistortion] Initialization complete" << std::endl;
+  }
 
   // Ref:LeGO-LOAM(BSD-3 LICENSE)
   // https://github.com/RobustFieldAutonomyLab/LeGO-LOAM/blob/master/LeGO-LOAM/src/featureAssociation.cpp#L431-L459
@@ -54,6 +77,15 @@ public:
     Eigen::Vector3f angular_velo, Eigen::Vector3f acc, const Eigen::Quaternionf quat,
     const double imu_time /*[sec]*/)
   {
+    static int call_count = 0;
+    if (call_count % 50 == 0) {  // Log every 50th call
+      std::cout << "[LidarUndistortion] getImu called (#" << call_count 
+                << "), imu_time: " << imu_time 
+                << ", imu_ptr_last_: " << imu_ptr_last_ 
+                << ", imu_ptr_front_: " << imu_ptr_front_ << std::endl;
+    }
+    call_count++;
+    
     float roll, pitch, yaw;
     Eigen::Affine3f affine(quat);
     pcl::getEulerAngles(affine, roll, pitch, yaw);
@@ -62,6 +94,13 @@ public:
 
     if ((imu_ptr_last_ + 1) % imu_que_length_ == imu_ptr_front_) {
       imu_ptr_front_ = (imu_ptr_front_ + 1) % imu_que_length_;
+    }
+    
+    // Safety check
+    if (imu_ptr_last_ < 0 || imu_ptr_last_ >= imu_que_length_) {
+      std::cerr << "[LidarUndistortion] ERROR: imu_ptr_last_ out of bounds: " 
+                << imu_ptr_last_ << std::endl;
+      return;
     }
 
     imu_time_[imu_ptr_last_] = imu_time;
@@ -80,6 +119,14 @@ public:
     // angular_velo = rot * angular_velo;
 
     int imu_ptr_back = (imu_ptr_last_ - 1 + imu_que_length_) % imu_que_length_;
+    
+    // Safety check on imu_ptr_back
+    if (imu_ptr_back < 0 || imu_ptr_back >= imu_que_length_) {
+      std::cerr << "[LidarUndistortion] ERROR: imu_ptr_back out of bounds: " 
+                << imu_ptr_back << std::endl;
+      return;
+    }
+    
     double time_diff = imu_time_[imu_ptr_last_] - imu_time_[imu_ptr_back];
     if (time_diff < scan_period_) {
       imu_shift_x_[imu_ptr_last_] =
@@ -111,8 +158,30 @@ public:
     pcl::PointCloud<pcl::PointXYZI>::Ptr & cloud,
     const double scan_time /*[sec]*/)
   {
-    bool half_passed = false;
+    // Safety check: ensure cloud is valid and not empty
+    if (!cloud || cloud->points.empty()) {
+      std::cerr << "[LidarUndistortion] ERROR: Cloud is null or empty!" << std::endl;
+      return;
+    }
+    
     int cloud_size = cloud->points.size();
+    std::cout << "[LidarUndistortion] adjustDistortion called with " << cloud_size 
+              << " points, scan_time: " << scan_time << std::endl;
+    
+    // Check if we have enough points
+    if (cloud_size < 2) {
+      std::cerr << "[LidarUndistortion] ERROR: Not enough points (" << cloud_size << ")" << std::endl;
+      return;
+    }
+    
+    // Check if we have sufficient IMU data to perform undistortion
+    if (imu_ptr_last_ <= 0) {
+      std::cout << "[LidarUndistortion] WARNING: Insufficient IMU data (imu_ptr_last_=" 
+                << imu_ptr_last_ << "), skipping undistortion" << std::endl;
+      return;  // Skip undistortion but keep cloud intact
+    }
+    
+    bool half_passed = false;
 
     float start_ori = -std::atan2(cloud->points[0].y, cloud->points[0].x);
     float end_ori = -std::atan2(cloud->points[cloud_size - 1].y, cloud->points[cloud_size - 1].x);
@@ -128,8 +197,18 @@ public:
     Eigen::Matrix3f r_s_i, r_c;
     Eigen::Vector3f adjusted_p;
     float ori_h;
+    
+    int points_adjusted = 0;
+    int points_skipped = 0;
+    
     for (int i = 0; i < cloud_size; ++i) {
       pcl::PointXYZI & p = cloud->points[i];
+      
+      // Diagnostic: check if point is already invalid
+      if (i == 0 && (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z))) {
+        std::cerr << "[LidarUndistortion] ERROR: First point already NaN/Inf before processing!" << std::endl;
+      }
+      
       ori_h = -std::atan2(p.y, p.x);
       if (!half_passed) {
         if (ori_h < start_ori - M_PI * 0.5) {
@@ -154,7 +233,21 @@ public:
 
       if (imu_ptr_last_ > 0) {
         imu_ptr_front_ = imu_ptr_last_iter_;
+        
+        // Safety check on pointer values
+        if (imu_ptr_front_ < 0 || imu_ptr_front_ >= imu_que_length_) {
+          std::cerr << "[LidarUndistortion] ERROR: imu_ptr_front_ out of bounds: " 
+                    << imu_ptr_front_ << std::endl;
+          continue;
+        }
+        
+        int loop_count = 0;
         while (imu_ptr_front_ != imu_ptr_last_) {
+          if (loop_count++ > imu_que_length_) {
+            std::cerr << "[LidarUndistortion] ERROR: Infinite loop detected in IMU pointer iteration" << std::endl;
+            break;
+          }
+          
           if (scan_time + rel_time < imu_time_[imu_ptr_front_]) {
             break;
           }
@@ -162,6 +255,7 @@ public:
         }
 
         if (std::abs(scan_time + rel_time - imu_time_[imu_ptr_front_]) > scan_period_) {
+          points_skipped++;
           continue;
         }
 
@@ -213,16 +307,22 @@ public:
           shift_start = shift_cur;
           velo_start = velo_cur;
           r_s_i = r_c.inverse();
+          points_adjusted++;
         } else {
           shift_from_start = shift_cur - shift_start - velo_start * rel_time;
           adjusted_p = r_s_i * (r_c * Eigen::Vector3f(p.x, p.y, p.z) + shift_from_start);
           p.x = adjusted_p.x();
           p.y = adjusted_p.y();
           p.z = adjusted_p.z();
+          points_adjusted++;
         }
       }
       imu_ptr_last_iter_ = imu_ptr_front_;
     }
+    
+    std::cout << "[LidarUndistortion] Undistortion complete: " 
+              << points_adjusted << " points adjusted, " 
+              << points_skipped << " points skipped" << std::endl;
   }
 
 

@@ -188,6 +188,7 @@ private:
     bool set_initial_pose_ {false};
     bool publish_tf_ {true};
     bool use_odom_ {false};
+    bool use_constant_vel_ {false};
     bool use_imu_ {false};
     bool debug_flag_ {false};
 
@@ -211,6 +212,10 @@ private:
 
     // odom
     Eigen::Matrix4f previous_odom_mat_ {Eigen::Matrix4f::Identity()};
+    
+    // constant velocity model
+    Eigen::Matrix4f previous_pose_mat_ {Eigen::Matrix4f::Identity()};
+    rclcpp::Time previous_scan_time_;
 
     // imu
     double scan_period_ {0.1};

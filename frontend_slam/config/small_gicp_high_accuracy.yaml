@@ -51,6 +51,7 @@ frontend_slam:
     # TF and odom
     publish_tf: true
     use_odom: false
+    use_constant_vel: false
     use_imu: false
     
     # Debug

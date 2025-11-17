@@ -23,7 +23,7 @@ backend_slam:
 
       # Scancontext parameters
       use_scancontext: true
-      use_geometric_verification: false
+      use_geometric_verification: true
       scancontext_dist_threshold: 0.15
 
       # Keyframe selection parameters

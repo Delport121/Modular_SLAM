@@ -7,6 +7,8 @@ frontend_slam:
     vg_size_for_input: 1.5
     vg_size_for_map: 0.075
     set_initial_pose: false
+    use_odom: false
+    use_constant_vel: false
     use_imu: false
     debug_flag: false
     tum_log_filename: "/home/ruan/dev_ws/tum_trajectory.txt"

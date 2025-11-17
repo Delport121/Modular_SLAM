@@ -112,6 +112,8 @@ FrontendSlamComponent::FrontendSlamComponent(const rclcpp::NodeOptions & options
   get_parameter("publish_tf", publish_tf_);
   declare_parameter("use_odom", false);
   get_parameter("use_odom", use_odom_);
+  declare_parameter("use_constant_vel", false);
+  get_parameter("use_constant_vel", use_constant_vel_);
   declare_parameter("use_imu", false);
   get_parameter("use_imu", use_imu_);
   declare_parameter("debug_flag", false);
@@ -141,6 +143,7 @@ FrontendSlamComponent::FrontendSlamComponent(const rclcpp::NodeOptions & options
   std::cout << "set_initial_pose:" << std::boolalpha << set_initial_pose_ << std::endl;
   std::cout << "publish_tf:" << std::boolalpha << publish_tf_ << std::endl;
   std::cout << "use_odom:" << std::boolalpha << use_odom_ << std::endl;
+  std::cout << "use_constant_vel:" << std::boolalpha << use_constant_vel_ << std::endl;
   std::cout << "use_imu:" << std::boolalpha << use_imu_ << std::endl;
   std::cout << "scan_period[sec]:" << scan_period_ << std::endl;
   std::cout << "debug_flag:" << std::boolalpha << debug_flag_ << std::endl;
@@ -299,7 +302,33 @@ void FrontendSlamComponent::initializePubSub()
 
       pcl::PointCloud<pcl::PointXYZI>::Ptr tmp_ptr(new pcl::PointCloud<pcl::PointXYZI>());
       pcl::fromROSMsg(transformed_msg, *tmp_ptr);
-      //pcl::fromROSMsg(*msg, *tmp_ptr);
+      
+
+      //----------------------------------------
+      // Filter out NaN/Inf points caused by Ouster point cloud format incompatibility
+      // The Ouster format has padding between z and intensity fields, causing PCL conversion issues
+      pcl::PointCloud<pcl::PointXYZI>::Ptr filtered_ptr(new pcl::PointCloud<pcl::PointXYZI>());
+      filtered_ptr->header = tmp_ptr->header;
+      filtered_ptr->is_dense = false;
+      
+      RCLCPP_INFO(get_logger(), "Original points count: %zu", tmp_ptr->points.size());
+      int nan_count = 0;
+      for (const auto& p : tmp_ptr->points) {
+        if (std::isfinite(p.x) && std::isfinite(p.y) && std::isfinite(p.z)) {
+          filtered_ptr->points.push_back(p);
+        } else {
+          nan_count++;
+        }
+      }
+      if (nan_count > 0) {
+        RCLCPP_INFO_ONCE(get_logger(), "Filtering NaN points due to Ouster format (first occurrence logged)");
+        RCLCPP_INFO(get_logger(), "Filtered out %d NaN/Inf points. Valid points: %zu", 
+                     nan_count, filtered_ptr->points.size());
+      }
+      // Replace original cloud with filtered cloud
+      tmp_ptr = filtered_ptr;
+      
+      //----------------------------------------
 
       if (use_imu_) {
         double scan_time = msg->header.stamp.sec +
@@ -491,6 +520,26 @@ void FrontendSlamComponent::receiveCloud(
       sim_trans = sim_trans * previous_odom_mat_.inverse() * odom_mat;
     }
     previous_odom_mat_ = odom_mat;
+  }
+  
+  /* Use constant velocity model for initialization */ //TODO: Sanity check if the constant velocity model is working as intended
+  if (use_constant_vel_ && !use_odom_) {
+    if (previous_pose_mat_ != Eigen::Matrix4f::Identity() && previous_scan_time_.nanoseconds() != 0) {
+      // Calculate time difference
+      double dt = (stamp.seconds() - previous_scan_time_.seconds());
+      
+      if (dt > 0.0 && dt < 1.0) {  // Sanity check on time delta
+        // Calculate velocity (relative transformation between previous poses)
+        Eigen::Matrix4f delta_transform = previous_pose_mat_.inverse() * sim_trans;
+        
+        // Apply constant velocity: current_pose + velocity * dt
+        // Since we already have one dt in delta_transform, we apply it directly
+        sim_trans = sim_trans * delta_transform;
+      }
+    }
+    previous_pose_mat_ = sim_trans;
+    previous_scan_time_ = stamp;
+    RCLCPP_WARN(get_logger(), "Using constant velocity model for initialization Warning --logic was not sanity checked for this yet");
   }
 
   /*Do alignment*/
