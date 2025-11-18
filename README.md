@@ -28,5 +28,9 @@ The package currently has the following features:
 
 ## Original README Content Below:
 
+## To do
 - SCAN context paramters needs to be tuned in its header file in the Thirdparty folder. Its const variables it cannot be changed with ros
+- Test constant velocity model in more detial
+- Test Lidar undistortion in more detail
+- Try using GTSAM instead of g20 in the backend
 ---
