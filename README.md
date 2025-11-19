@@ -2,6 +2,120 @@
 
 **Note: This package was inspired by the architecture used in [lidarslam_ros2](https://github.com/rsasaki0109/lidarslam_ros2) by Ryohei Sasaki. All original credits go to the original author.**
 
+## Installation and Build Guide
+
+### Prerequisites
+- ROS 2 (Humble or later)
+- PCL (Point Cloud Library)
+- Eigen3
+- g2o (graph optimization library)
+- OpenMP
+
+### Installation Steps
+
+1. **Clone the repository into your ROS 2 workspace:**
+   ```bash
+   cd ~/your_ros2_workspace/src
+   git clone https://github.com/Delport121/Modular_SLAM.git lidarslam_ros2
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   cd ~/your_ros2_workspace
+   rosdep install --from-paths src --ignore-src -r -y
+   ```
+
+3. **Build the workspace:**
+   ```bash
+   cd ~/your_ros2_workspace
+   colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+   ```
+
+4. **Source the workspace:**
+   ```bash
+   source ~/your_ros2_workspace/install/setup.bash
+   ```
+
+## Running the SLAM System
+
+### Option 1: Running Frontend and Backend Separately
+
+This approach gives you more control and is useful for debugging individual components.
+
+**Terminal 1 - Launch Frontend:**
+```bash
+ros2 launch frontend_slam frontendslam.launch.py
+```
+
+**Terminal 2 - Launch Backend:**
+```bash
+ros2 launch backend_slam backendslam.launch.py
+```
+
+### Option 2: Running Complete System Together
+
+Launch the entire SLAM system with a single command using the integrated launch file:
+
+```bash
+ros2 launch lidarslam lidarslam.launch.py
+```
+
+**Other integrated launch options:**
+```bash
+# For Voyager robot configuration
+ros2 launch lidarslam lidarslam_voyager.launch.py
+
+# For Tukuba dataset
+ros2 launch lidarslam lidarslam_tukuba.launch.py
+```
+
+## Configuration and Customization
+
+### Tuning Parameters
+
+Parameters can be adjusted in the YAML configuration files located in:
+- `frontend_slam/config/` - Frontend SLAM parameters
+- `backend_slam/param/` - Backend optimization parameters
+- `lidarslam/param/` - Integrated system parameters
+
+**Available frontend configurations:**
+- `mapping_robot.yaml` - General robot mapping
+- `mapping_car.yaml` - Car/vehicle mapping
+- `scan_to_model.yaml` - Scan-to-model registration
+- `small_gicp_balanced.yaml` - Balanced performance
+- `small_gicp_high_speed.yaml` - High-speed operation
+- `small_gicp_high_accuracy.yaml` - High accuracy
+
+### Changing Configuration Files
+
+To use a different configuration, modify the launch file. For example, in `frontendslam.launch.py`:
+
+```python
+parameters=[os.path.join(
+    get_package_share_directory('frontend_slam'),
+    'config',
+    'scan_to_model.yaml'  # Change this to your desired config file
+)]
+```
+
+### Topic Remapping
+
+Topic remappings can be configured in the launch files. For example:
+
+```python
+remappings=[
+    ('input_cloud', '/your/lidar/topic'),
+    ('current_pose', '/your/pose/topic'),
+    ('map', '/your/map/topic')
+]
+```
+
+Common remappings in launch files:
+- `input_cloud` - Point cloud input from LiDAR
+- `current_pose` - Current robot pose output
+- `map` - Map point cloud output
+- `path` - Trajectory path output
+
 ## Modifications and Enhancements
 
 The package currently has the following features:
